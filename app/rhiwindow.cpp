@@ -42,9 +42,6 @@ void RhiWindow::exposeEvent(QExposeEvent *)
     if (isExposed() && !surfaceSize.isEmpty())
         render();
 }
-//! [expose]
-
-//! [event]
 bool RhiWindow::event(QEvent *e)
 {
     switch (e->type()) {
@@ -64,9 +61,6 @@ bool RhiWindow::event(QEvent *e)
 
     return QWindow::event(e);
 }
-//! [event]
-
-//! [rhi-init]
 void RhiWindow::init()
 {
     QRhiD3D12InitParams params;
@@ -90,11 +84,6 @@ void RhiWindow::init()
 void RhiWindow::resizeSwapChain()
 {
     m_hasSwapChain = m_sc->createOrResize(); // also handles m_ds
-
-    const QSize outputSize = m_sc->currentPixelSize();
-    m_viewProjection = m_rhi->clipSpaceCorrMatrix();
-    m_viewProjection.perspective(45.0f, outputSize.width() / (float) outputSize.height(), 0.01f, 1000.0f);
-    m_viewProjection.translate(0, 0, -4);
 }
 void RhiWindow::releaseSwapChain()
 {
@@ -115,6 +104,7 @@ void RhiWindow::render()
     }
 
     QRhi::FrameOpResult result = m_rhi->beginFrame(m_sc.get());
+
     if (result == QRhi::FrameOpSwapChainOutOfDate) {
         resizeSwapChain();
         if (!m_hasSwapChain)
@@ -133,13 +123,6 @@ void RhiWindow::render()
     requestUpdate();
 }
 
-static float vertexData[] = {
-    // Y up (note clipSpaceCorrMatrix in m_viewProjection), CCW
-     0.0f,   0.5f,   1.0f, 0.0f, 0.0f,
-    -0.5f,  -0.5f,   0.0f, 1.0f, 0.0f,
-     0.5f,  -0.5f,   0.0f, 0.0f, 1.0f,
-};
-
 static QShader getShader(const QString &name)
 {
     QFile f(name);
@@ -149,8 +132,9 @@ static QShader getShader(const QString &name)
     return QShader();
 }
 
-HelloWindow::HelloWindow()
+HelloWindow::HelloWindow(const char* ws)
 {
+    app.init(ws);
 }
 
 void HelloWindow::ensureFullscreenTexture(const QSize &pixelSize, QRhiResourceUpdateBatch *u)
@@ -163,26 +147,35 @@ void HelloWindow::ensureFullscreenTexture(const QSize &pixelSize, QRhiResourceUp
     else
         m_texture->setPixelSize(pixelSize);
 
-    m_texture->create();
+    uint64_t handle = app.create_texture(pixelSize.width(), pixelSize.height());
+    m_texture->createFrom({handle, 0});
 
-    QImage image(pixelSize, QImage::Format_RGBA8888_Premultiplied);
-    QPainter painter(&image);
-    painter.fillRect(QRectF(QPointF(0, 0), pixelSize), QColor::fromRgbF(0.4f, 0.7f, 0.0f, 1.0f));
-    painter.setPen(Qt::transparent);
-    painter.setBrush({ QGradient(QGradient::DeepBlue) });
-    painter.drawRoundedRect(QRectF(QPointF(20, 20), pixelSize - QSize(40, 40)), 16, 16);
-    painter.setPen(Qt::black);
-    QFont font;
-    font.setPixelSize(0.05 * qMin(pixelSize.width(), pixelSize.height()));
-    painter.setFont(font);
-    painter.drawText(QRectF(QPointF(60, 60), pixelSize - QSize(120, 120)), 0,
-                     QLatin1String("Rendering with QRhi to a resizable QWindow.\nThe 3D API is %1.\nUse the command-line options to choose a different API.")
-                     .arg(graphicsApiName()));
-    painter.end();
 
-    if (m_rhi->isYUpInNDC())
-        image = image.mirrored();
-    u->uploadTexture(m_texture.get(), image);
+    // m_texture->create();
+    // uint64_t handle = m_texture->nativeTexture().object;
+    // uint width = m_texture->pixelSize().width();
+    // uint height = m_texture->pixelSize().height();
+    // app.update(handle, width, height);
+
+    // QImage image(pixelSize, QImage::Format_RGBA8888_Premultiplied);
+    // QPainter painter(&image);
+    // painter.fillRect(QRectF(QPointF(0, 0), pixelSize), QColor::fromRgbF(0.4f, 0.7f, 0.0f, 1.0f));
+    // painter.setPen(Qt::transparent);
+    // painter.setBrush({ QGradient(QGradient::DeepBlue) });
+    // painter.drawRoundedRect(QRectF(QPointF(20, 20), pixelSize - QSize(40, 40)), 16, 16);
+    // painter.setPen(Qt::black);
+    // QFont font;
+    // font.setPixelSize(0.05 * qMin(pixelSize.width(), pixelSize.height()));
+    // painter.setFont(font);
+    // painter.drawText(QRectF(QPointF(60, 60), pixelSize - QSize(120, 120)), 0,
+    //                  QLatin1String("Rendering with QRhi to a resizable QWindow.\nThe 3D API is %1.\nUse the command-line options to choose a different API.")
+    //                  .arg(graphicsApiName()));
+    // painter.end();
+
+    // if (m_rhi->isYUpInNDC())
+    //     image = image.mirrored();
+    // u->uploadTexture(m_texture.get(), image);
+
 }
 
 void HelloWindow::customInit()
@@ -226,6 +219,9 @@ void HelloWindow::customRender()
     QRhiCommandBuffer *cb = m_sc->currentFrameCommandBuffer();
     const QSize outputSizeInPixels = m_sc->currentPixelSize();
     ensureFullscreenTexture(outputSizeInPixels, resourceUpdates);
+
+    app.update();
+
     cb->beginPass(m_sc->currentFrameRenderTarget(), Qt::black, { 1.0f, 0 }, resourceUpdates);
     cb->setGraphicsPipeline(m_fullscreenQuadPipeline.get());
     cb->setViewport({ 0, 0, float(outputSizeInPixels.width()), float(outputSizeInPixels.height()) });

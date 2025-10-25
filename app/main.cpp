@@ -4,13 +4,21 @@
 #include <QGuiApplication>
 #include <QCommandLineParser>
 #include "rhiwindow.h"
+#include <QVBoxLayout>
+#include <QHBoxLayout>
+#include <QLabel>
+#include <QDialogButtonBox>
 
 int main(int argc, char **argv)
 {
     QGuiApplication app(argc, argv);
-    HelloWindow window;
+    QVBoxLayout *layout = new QVBoxLayout;
+
+    HelloWindow window{argv[0]};
+    
     window.resize(1280, 720);
     window.setTitle(QCoreApplication::applicationName() + QLatin1String(" - ") + window.graphicsApiName());
+
     window.show();
 
     int ret = app.exec();

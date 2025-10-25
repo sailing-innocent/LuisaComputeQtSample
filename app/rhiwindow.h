@@ -2,6 +2,7 @@
 #include <QWindow>
 #include <QOffscreenSurface>
 #include <rhi/qrhi.h>
+#include "pt_rt.h"
 
 class RhiWindow : public QWindow
 {
@@ -18,7 +19,6 @@ protected:
     std::unique_ptr<QRhiRenderBuffer> m_ds;
     std::unique_ptr<QRhiRenderPassDescriptor> m_rp;
     bool m_hasSwapChain = false;
-    QMatrix4x4 m_viewProjection;
 
 private:
     void init();
@@ -29,6 +29,7 @@ private:
     bool event(QEvent *) override;
 
     QRhi::Implementation m_graphicsApi = QRhi::D3D12;
+
     bool m_initialized = false;
     bool m_notExposed = false;
     bool m_newlyExposed = false;
@@ -37,7 +38,7 @@ private:
 class HelloWindow : public RhiWindow
 {
 public:
-    HelloWindow();
+    HelloWindow(const char* ws);
     void customInit() override;
     void customRender() override;
 
@@ -55,7 +56,5 @@ private:
 
     QRhiResourceUpdateBatch *m_initialUpdates = nullptr;
 
-    float m_rotation = 0;
-    float m_opacity = 1;
-    int m_opacityDir = -1;
+    App app;
 };
