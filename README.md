@@ -7,3 +7,7 @@ edit .env.template -> .env with your LuisaCompute dir
 `xmake l setup.lua`
 `xmake`
 `xmake run rhi_window_sample`
+
+结果如图所示，UI组件只是为了展示，没有实际效果
+
+![](doc/result.png)
