@@ -6,10 +6,10 @@
 using namespace luisa;
 using namespace luisa::compute;
 
-void App::init(const char* ws, void* rhi_device, void* rhi_instance /*/only for vulkan*/, void* rhi_physical_device /*only for vulkan*/)
+void App::init(const char* ws, const char* backend_name, void* rhi_device, void* rhi_instance /*/only for vulkan*/, void* rhi_physical_device /*only for vulkan*/)
 {
     Context context(ws);
-    luisa::string_view backend = "dx";
+    luisa::string_view backend = backend_name;
     bool gpu_dump;
 #ifdef NDEBUG
     gpu_dump = false;

@@ -7,7 +7,7 @@
 class RhiWindow : public QWindow
 {
 public:
-    RhiWindow();
+    RhiWindow(QRhi::Implementation graphicsApi);
     QString graphicsApiName() const;
     void releaseSwapChain();
     std::string workspace_path;
@@ -20,7 +20,7 @@ protected:
     std::unique_ptr<QRhiRenderBuffer> m_ds;
     std::unique_ptr<QRhiRenderPassDescriptor> m_rp;
     bool m_hasSwapChain = false;
-
+    QRhi::Implementation m_graphicsApi = QRhi::D3D12;
 private:
     void init();
     void resizeSwapChain();
@@ -29,7 +29,7 @@ private:
     void exposeEvent(QExposeEvent *) override;
     bool event(QEvent *) override;
 
-    QRhi::Implementation m_graphicsApi = QRhi::D3D12;
+
 
     bool m_initialized = false;
     bool m_notExposed = false;
@@ -40,7 +40,7 @@ private:
 class HelloWindow : public RhiWindow
 {
 public:
-    HelloWindow();
+    HelloWindow(QRhi::Implementation graphicsApi);
     void customInit(const char* ws, void* rhi_device, void* rhi_instance /*/only for vulkan*/, void* rhi_physical_device /*only for vulkan*/) override;
     void customRender() override;
 

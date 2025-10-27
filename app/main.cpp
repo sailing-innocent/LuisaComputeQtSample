@@ -10,12 +10,46 @@
 #include <QPushButton>
 #include <QSlider>
 #include <QGroupBox>
+#include "qlogging.h"
+#include "rhi/qrhi.h"
 #include "rhiwindow.h"
 
 int main(int argc, char **argv)
 {
     // 使用QApplication而不是QGuiApplication以支持widgets
     QApplication app(argc, argv);
+
+    if (argc < 2) {
+        qInfo("use 'rhi_window_sample dx/vk' to select backend");
+    }
+    std::string backend = argv[1];
+    QRhi::Implementation graphicsApi;
+    if (backend == "dx") {
+        graphicsApi = QRhi::D3D12;
+    }
+    else if (backend == "vk") {
+        graphicsApi = QRhi::Vulkan;
+    }
+    else {
+        qInfo("Invalid backend, choose between dx/vk");
+    }
+
+    // For Vulkan.
+    #if QT_CONFIG(vulkan)
+        QVulkanInstance inst;
+        if (graphicsApi == QRhi::Vulkan) {
+            // Request validation, if available. This is completely optional
+            // and has a performance impact, and should be avoided in production use.
+            inst.setLayers({ "VK_LAYER_KHRONOS_validation" });
+            // Play nice with QRhi.
+            inst.setExtensions(QRhiVulkanInitParams::preferredInstanceExtensions());
+            if (!inst.create()) {
+                qWarning("Failed to create Vulkan instance, switching to D3D12");
+                graphicsApi = QRhi::D3D12;
+            }
+        }
+    #endif
+
 
     // 创建主窗口容器
     QWidget mainWindow;
@@ -43,10 +77,13 @@ int main(int argc, char **argv)
     
     mainLayout->addLayout(topBarLayout);
 
-    // 创建渲染窗口
-    // TODO: external device
-    HelloWindow *renderWindow = new HelloWindow;
+    HelloWindow *renderWindow = new HelloWindow(graphicsApi);
     renderWindow->workspace_path = argv[0]; // set runtime workspace path
+
+    #if QT_CONFIG(vulkan)
+        if (graphicsApi == QRhi::Vulkan)
+            renderWindow->setVulkanInstance(&inst);
+    #endif
 
     QWidget *renderContainer = QWidget::createWindowContainer(renderWindow, &mainWindow);
     renderContainer->setMinimumSize(800, 600);

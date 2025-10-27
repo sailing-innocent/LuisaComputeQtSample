@@ -1,18 +1,38 @@
 #include "rhiwindow.h"
+#include "qbytearrayview.h"
 #include "rhi/qrhi_platform.h"
 #include <QPlatformSurfaceEvent>
 #include <QPainter>
 #include <QFile>
 #include <rhi/qshader.h>
 
-RhiWindow::RhiWindow()
+RhiWindow::RhiWindow(QRhi::Implementation graphicsApi): m_graphicsApi(graphicsApi)
 {
-    setSurfaceType(Direct3DSurface);
+    // setSurfaceType(Direct3DSurface);
+    switch (graphicsApi) {
+    case QRhi::D3D12:
+        setSurfaceType(Direct3DSurface);
+        break;
+    case QRhi::Vulkan:
+        setSurfaceType(VulkanSurface);
+        break;
+    default:
+        setSurfaceType(Direct3DSurface);
+        break;
+    }
 }
 
 QString RhiWindow::graphicsApiName() const
 {
-    return QLatin1String("Direct3D 12");
+    switch (m_graphicsApi) {
+        case QRhi::D3D12:
+            return QLatin1String("Direct3D 12");
+        case QRhi::Vulkan:
+            return QLatin1String("Vulkan Backend");
+        default: 
+            return QLatin1String("Unknown Backend");
+    }
+
 }
 
 void RhiWindow::exposeEvent(QExposeEvent *)
@@ -64,13 +84,30 @@ bool RhiWindow::event(QEvent *e)
 }
 void RhiWindow::init()
 {
+#if QT_CONFIG(vulkan)
+    if (m_graphicsApi == QRhi::Vulkan) {
+        QRhiVulkanInitParams params;
+        params.inst = vulkanInstance();
+        params.window = this;
+        m_rhi.reset(QRhi::create(QRhi::Vulkan, &params));
+    }
+#endif
+
     QRhiD3D12InitParams params;
+
+
+#ifdef Q_OS_WIN
+    if (m_graphicsApi == QRhi::D3D12) {
+        QRhiD3D12InitParams params;
 #ifdef DEBUG 
     params.enableDebugLayer = true;
 #else
     params.enableDebugLayer = false;
 #endif 
-    m_rhi.reset(QRhi::create(QRhi::D3D12, &params));
+        m_rhi.reset(QRhi::create(QRhi::D3D12, &params));
+    }
+#endif
+
     if (!m_rhi)
         qFatal("Failed to create RHI backend");
 
@@ -84,8 +121,19 @@ void RhiWindow::init()
     m_rp.reset(m_sc->newCompatibleRenderPassDescriptor());
     m_sc->setRenderPassDescriptor(m_rp.get());
     
-    const QRhiD3D12NativeHandles* d3d12_handle = (QRhiD3D12NativeHandles*)m_rhi->nativeHandles();
-    customInit(workspace_path.c_str(), (void*)d3d12_handle->dev, nullptr /*/only for vulkan*/, nullptr /*only for vulkan*/);
+    void* rhi_device = nullptr;
+#if QT_CONFIG(vulkan)
+    if (m_graphicsApi == QRhi::Vulkan) {
+        const QRhiVulkanNativeHandles* handle = (QRhiVulkanNativeHandles*)m_rhi->nativeHandles();
+        customInit(workspace_path.c_str(), (void*)handle->dev, handle->inst /*/only for vulkan*/, handle->physDev /*only for vulkan*/);
+    }
+#endif
+#ifdef Q_OS_WIN
+    if (m_graphicsApi == QRhi::D3D12) {
+        const QRhiD3D12NativeHandles* handle = (QRhiD3D12NativeHandles*)m_rhi->nativeHandles();
+        customInit(workspace_path.c_str(), (void*)handle->dev, nullptr /*/only for vulkan*/, nullptr /*only for vulkan*/);
+    }
+#endif
 }
 
 void RhiWindow::resizeSwapChain()
@@ -139,9 +187,9 @@ static QShader getShader(const QString &name)
     return QShader();
 }
 
-HelloWindow::HelloWindow()
+HelloWindow::HelloWindow(QRhi::Implementation graphicsApi): RhiWindow(graphicsApi)
 {
-    
+
 }
 
 void HelloWindow::ensureFullscreenTexture(const QSize &pixelSize, QRhiResourceUpdateBatch *u)
@@ -187,7 +235,13 @@ void HelloWindow::ensureFullscreenTexture(const QSize &pixelSize, QRhiResourceUp
 
 void HelloWindow::customInit(const char* ws, void* rhi_device, void* rhi_instance /*/only for vulkan*/, void* rhi_physical_device /*only for vulkan*/)
 {
-    app.init(ws, rhi_device, rhi_instance, rhi_physical_device);
+    if (m_graphicsApi == QRhi::D3D12) {
+        app.init(ws, "dx", rhi_device, rhi_instance, rhi_physical_device);
+    }
+    if (m_graphicsApi == QRhi::Vulkan) {
+        app.init(ws, "vk", rhi_device, rhi_instance, rhi_physical_device);
+    }
+
     m_initialUpdates = m_rhi->nextResourceUpdateBatch();
 
     ensureFullscreenTexture(m_sc->surfacePixelSize(), m_initialUpdates);
