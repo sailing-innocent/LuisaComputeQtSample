@@ -1,4 +1,5 @@
 #include "rhiwindow.h"
+#include "rhi/qrhi_platform.h"
 #include <QPlatformSurfaceEvent>
 #include <QPainter>
 #include <QFile>
@@ -82,7 +83,9 @@ void RhiWindow::init()
     m_sc->setDepthStencil(m_ds.get());
     m_rp.reset(m_sc->newCompatibleRenderPassDescriptor());
     m_sc->setRenderPassDescriptor(m_rp.get());
-    customInit();
+    
+    const QRhiD3D12NativeHandles* d3d12_handle = (QRhiD3D12NativeHandles*)m_rhi->nativeHandles();
+    customInit(workspace_path.c_str(), (void*)d3d12_handle->dev, nullptr /*/only for vulkan*/, nullptr /*only for vulkan*/);
 }
 
 void RhiWindow::resizeSwapChain()
@@ -136,9 +139,9 @@ static QShader getShader(const QString &name)
     return QShader();
 }
 
-HelloWindow::HelloWindow(const char* ws, void* rhi_device, void* rhi_instance /*/only for vulkan*/, void* rhi_physical_device /*only for vulkan*/)
+HelloWindow::HelloWindow()
 {
-    app.init(ws, rhi_device, rhi_instance, rhi_physical_device);
+    
 }
 
 void HelloWindow::ensureFullscreenTexture(const QSize &pixelSize, QRhiResourceUpdateBatch *u)
@@ -182,8 +185,9 @@ void HelloWindow::ensureFullscreenTexture(const QSize &pixelSize, QRhiResourceUp
 
 }
 
-void HelloWindow::customInit()
+void HelloWindow::customInit(const char* ws, void* rhi_device, void* rhi_instance /*/only for vulkan*/, void* rhi_physical_device /*only for vulkan*/)
 {
+    app.init(ws, rhi_device, rhi_instance, rhi_physical_device);
     m_initialUpdates = m_rhi->nextResourceUpdateBatch();
 
     ensureFullscreenTexture(m_sc->surfacePixelSize(), m_initialUpdates);

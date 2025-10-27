@@ -10,9 +10,10 @@ public:
     RhiWindow();
     QString graphicsApiName() const;
     void releaseSwapChain();
+    std::string workspace_path;
 
 protected:
-    virtual void customInit() = 0;
+    virtual void customInit(const char* ws, void* rhi_device, void* rhi_instance /*/only for vulkan*/, void* rhi_physical_device /*only for vulkan*/) = 0;
     virtual void customRender() = 0;
     std::unique_ptr<QRhi> m_rhi;
     std::unique_ptr<QRhiSwapChain> m_sc;
@@ -33,13 +34,14 @@ private:
     bool m_initialized = false;
     bool m_notExposed = false;
     bool m_newlyExposed = false;
+
 };
 
 class HelloWindow : public RhiWindow
 {
 public:
-    HelloWindow(const char* ws, void* rhi_device, void* rhi_instance /*/only for vulkan*/, void* rhi_physical_device /*only for vulkan*/);
-    void customInit() override;
+    HelloWindow();
+    void customInit(const char* ws, void* rhi_device, void* rhi_instance /*/only for vulkan*/, void* rhi_physical_device /*only for vulkan*/) override;
     void customRender() override;
 
 private:

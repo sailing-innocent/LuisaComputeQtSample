@@ -45,7 +45,9 @@ int main(int argc, char **argv)
 
     // 创建渲染窗口
     // TODO: external device
-    HelloWindow *renderWindow = new HelloWindow(argv[0], nullptr, nullptr, nullptr);
+    HelloWindow *renderWindow = new HelloWindow;
+    renderWindow->workspace_path = argv[0]; // set runtime workspace path
+
     QWidget *renderContainer = QWidget::createWindowContainer(renderWindow, &mainWindow);
     renderContainer->setMinimumSize(800, 600);
     renderContainer->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
