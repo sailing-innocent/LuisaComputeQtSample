@@ -6,14 +6,6 @@ target("dummy_base")
     add_files("base/**.cpp")
 target_end()
 
-tool_target_with_lc("dummy")
-    _config_project({
-        project_kind = "binary"
-    })
-    add_deps("dummy_base")
-    add_deps("lc-dsl")
-    add_files("path_tracing_camera.cpp")
-target_end()
 
 -- target("dummystand")
 --     _config_project({
@@ -31,7 +23,7 @@ target("dummyrt")
     add_deps("dummy_base")
     add_deps("lc-dsl")
     add_includedirs(".", {public=true})
-    add_headerfiles("pt_rt.h")
+    add_headerfiles("dummyrt.h")
     add_defines("DUMMY_DLL_EXPORTS")
-    add_files("pt_rt.cpp")
+    add_files("dummyrt.cpp")
 target_end()

@@ -64,7 +64,11 @@ bool RhiWindow::event(QEvent *e)
 void RhiWindow::init()
 {
     QRhiD3D12InitParams params;
+#ifdef DEBUG 
     params.enableDebugLayer = true;
+#else
+    params.enableDebugLayer = false;
+#endif 
     m_rhi.reset(QRhi::create(QRhi::D3D12, &params));
     if (!m_rhi)
         qFatal("Failed to create RHI backend");

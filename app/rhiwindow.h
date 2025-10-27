@@ -2,7 +2,7 @@
 #include <QWindow>
 #include <QOffscreenSurface>
 #include <rhi/qrhi.h>
-#include "pt_rt.h"
+#include "dummyrt.h"
 
 class RhiWindow : public QWindow
 {

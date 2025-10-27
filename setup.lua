@@ -1,12 +1,9 @@
-function main(lc_path, qt_path)
+function main(lc_path)
     if type(lc_path) ~= "string" or not os.exists(lc_path) then
         utils.error("LuisaCompute path illegal.")
         return
     end
-    if type(qt_path) ~= "string" or not os.exists(qt_path) then
-        utils.error("QT SDK path illegal.")
-        return
-    end
+
     local lc_options = {
         lc_cuda_backend = true,
         lc_dx_backend = true,
@@ -30,8 +27,6 @@ function main(lc_path, qt_path)
     -- write sdk-dir
     lc_path = lc_path:gsub('\\', '/')
     lc_options.lc_sdk_dir = "'" .. path.join(lc_path, "SDKs"):gsub('\\', '/') .. "'"
-    -- write qt path
-    lc_options.qt = "'" .. qt_path:gsub('\\', '/') .. "'"
 
     local file = io.open("lc_options.generated.lua", "w")
     file:write("lc_dir = '")

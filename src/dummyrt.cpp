@@ -1,4 +1,4 @@
-#include "pt_rt.h"
+#include "dummyrt.h"
 #include "luisa/runtime/rhi/pixel.h"
 #include <luisa/backends/ext/native_resource_ext.hpp>
 #include "base/device_config.h"
