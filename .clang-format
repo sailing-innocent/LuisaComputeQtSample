@@ -10,7 +10,7 @@ AllowShortIfStatementsOnASingleLine: true
 AllowShortBlocksOnASingleLine: true
 
 AlignConsecutiveAssignments: true
-AlignConsecutiveDeclarations: true
+# AlignConsecutiveDeclarations: true
 AlignTrailingComments: true
 SpacesBeforeTrailingComments: 1
 SpacesInSquareBrackets: false

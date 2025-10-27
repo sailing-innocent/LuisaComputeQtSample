@@ -38,7 +38,7 @@ private:
 class HelloWindow : public RhiWindow
 {
 public:
-    HelloWindow(const char* ws);
+    HelloWindow(const char* ws, void* rhi_device, void* rhi_instance /*/only for vulkan*/, void* rhi_physical_device /*only for vulkan*/);
     void customInit() override;
     void customRender() override;
 

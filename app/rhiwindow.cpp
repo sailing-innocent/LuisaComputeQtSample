@@ -132,9 +132,9 @@ static QShader getShader(const QString &name)
     return QShader();
 }
 
-HelloWindow::HelloWindow(const char* ws)
+HelloWindow::HelloWindow(const char* ws, void* rhi_device, void* rhi_instance /*/only for vulkan*/, void* rhi_physical_device /*only for vulkan*/)
 {
-    app.init(ws);
+    app.init(ws, rhi_device, rhi_instance, rhi_physical_device);
 }
 
 void HelloWindow::ensureFullscreenTexture(const QSize &pixelSize, QRhiResourceUpdateBatch *u)

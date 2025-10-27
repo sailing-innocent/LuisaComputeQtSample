@@ -44,7 +44,8 @@ int main(int argc, char **argv)
     mainLayout->addLayout(topBarLayout);
 
     // 创建渲染窗口
-    HelloWindow *renderWindow = new HelloWindow(argv[0]);
+    // TODO: external device
+    HelloWindow *renderWindow = new HelloWindow(argv[0], nullptr, nullptr, nullptr);
     QWidget *renderContainer = QWidget::createWindowContainer(renderWindow, &mainWindow);
     renderContainer->setMinimumSize(800, 600);
     renderContainer->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
