@@ -16,9 +16,25 @@ void App::init(const char* ws, const char* backend_name, void* rhi_device, void*
 #else
     gpu_dump = true;
 #endif
-    DeviceConfig device_config{
-        .extension = backend == "dx" ? make_dx_device_config(rhi_device, gpu_dump) : make_vk_device_config(rhi_device, rhi_instance, rhi_physical_device)
-    };
+    DeviceConfig device_config = {};
+    #ifdef LUISA_QT_SAMPLE_ENABLE_DX
+    if (backend == "dx")
+    {
+        device_config.extension = make_dx_device_config(rhi_device, gpu_dump);
+    }
+    #endif
+    #ifdef LUISA_QT_SAMPLE_ENABLE_VK
+    if (backend == "vk")
+    {
+        device_config.extension = make_vk_device_config(rhi_device, rhi_instance, rhi_physical_device);
+    }
+    #endif
+    #ifdef LUISA_QT_SAMPLE_ENABLE_METAL
+    if (backend == "metal")
+    {
+        device_config.extension = nullptr;
+    }
+    #endif
     device_config_ext = device_config.extension.get();
     device                = context.create_device(backend, &device_config);
     stream                = device.create_stream(StreamTag::GRAPHICS);

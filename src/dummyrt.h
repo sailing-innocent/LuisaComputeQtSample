@@ -1,4 +1,5 @@
 #pragma once
+
 #include <luisa/luisa-compute.h>
 #include <luisa/dsl/sugar.h>
 #include <luisa/gui/input.h>
@@ -6,10 +7,18 @@
 #include <luisa/runtime/rhi/resource.h>
 #include <luisa/backends/ext/native_resource_ext_interface.h>
 
-#ifdef DUMMY_DLL_EXPORTS
-    #define DUMMY_API __declspec(dllexport)
+#ifdef _WIN32
+#define DUMMY_DECLSPEC_DLL_EXPORT __declspec(dllexport)
+#define DUMMY_DECLSPEC_DLL_IMPORT __declspec(dllimport)
 #else
-    #define DUMMY_API __declspec(dllimport)
+#define DUMMY_DECLSPEC_DLL_EXPORT __attribute__((visibility("default")))
+#define DUMMY_DECLSPEC_DLL_IMPORT
+#endif
+
+#ifdef DUMMY_DLL_EXPORTS
+    #define DUMMY_API DUMMY_DECLSPEC_DLL_EXPORT
+#else
+    #define DUMMY_API DUMMY_DECLSPEC_DLL_IMPORT
 #endif
 // #define DUMMY_API
 
