@@ -16,9 +16,9 @@
 #endif
 
 #ifdef DUMMY_DLL_EXPORTS
-    #define DUMMY_API DUMMY_DECLSPEC_DLL_EXPORT
+#define DUMMY_API DUMMY_DECLSPEC_DLL_EXPORT
 #else
-    #define DUMMY_API DUMMY_DECLSPEC_DLL_IMPORT
+#define DUMMY_API DUMMY_DECLSPEC_DLL_IMPORT
 #endif
 // #define DUMMY_API
 
@@ -31,13 +31,12 @@ struct DUMMY_API App {
     luisa::compute::Image<float> accum_image;
     luisa::compute::Image<uint> seed_image;
     luisa::compute::Image<float> dummy_image;
-    luisa::compute::DeviceConfigExt* device_config_ext{};
+    luisa::compute::DeviceConfigExt *device_config_ext{};
     luisa::compute::Shader<2, luisa::compute::Image<float>> clear_shader;
     luisa::compute::Shader<2, luisa::compute::Image<float>, float, luisa::compute::float2> draw_shader;
     luisa::uint2 resolution;
     luisa::Clock clk;
-    void init(const char* ws, const char* backend_name, void* rhi_device, void* rhi_instance /*/only for vulkan*/, void* rhi_physical_device /*only for vulkan*/);
+    void init(const char *ws, const char *backend_name, void *rhi_device, void *rhi_instance /*/only for vulkan*/, void *rhi_physical_device /*only for vulkan*/);
     int64_t create_texture(uint width, uint height);
-    void update(int64_t dx_texture_handle, uint width, uint height);
     void update();
 };

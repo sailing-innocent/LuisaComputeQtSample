@@ -6,16 +6,14 @@ void VkDeviceConfig::readback_vulkan_device(
     VkInstance instance,
     VkPhysicalDevice physical_device,
     VkDevice device,
-    VkAllocationCallbacks* alloc_callback,
-    VkPipelineCacheHeaderVersionOne const& pso_meta,
+    VkAllocationCallbacks *alloc_callback,
+    VkPipelineCacheHeaderVersionOne const &pso_meta,
     VkQueue graphics_queue,
     VkQueue compute_queue,
     VkQueue copy_queue,
-    IDxcCompiler3* dxc_compiler,
-    IDxcLibrary* dxc_library,
-    IDxcUtils* dxc_utils
-) noexcept
-{
+    IDxcCompiler3 *dxc_compiler,
+    IDxcLibrary *dxc_library,
+    IDxcUtils *dxc_utils) noexcept {
     this->instance = instance;
     this->physical_device = physical_device;
     this->device = device;
@@ -28,11 +26,9 @@ void VkDeviceConfig::readback_vulkan_device(
     this->dxc_utils = dxc_utils;
 }
 luisa::unique_ptr<luisa::compute::DeviceConfigExt> make_vk_device_config(
-    void* device,
-    void* vk_instance,
-    void* vk_physical_device
-)
-{
+    void *device,
+    void *vk_instance,
+    void *vk_physical_device) {
     auto device_config = luisa::make_unique<VkDeviceConfig>();
     device_config->instance = reinterpret_cast<VkInstance>(vk_instance);
     device_config->physical_device = reinterpret_cast<VkPhysicalDevice>(vk_physical_device);
