@@ -19,10 +19,14 @@ struct VkDeviceConfig : public VulkanDeviceConfigExt {
     IDxcCompiler3 *dxc_compiler{};
     IDxcLibrary *dxc_library{};
     IDxcUtils *dxc_utils{};
+    luisa::vector<VKCustomCmd::ResourceUsage> resource_before_states;
     VkDeviceConfig();
     ~VkDeviceConfig();
     bool load_dxc() const override {
         return true;// TODO: we may don't want to load DXC in random target platform
+    }
+    luisa::span<VKCustomCmd::ResourceUsage const> before_states(uint64_t stream_handle) override {
+        return resource_before_states;
     }
     luisa::vector<luisa::string> extra_instance_exts() {
         return luisa::vector<luisa::string>{"VK_KHR_multiview", "VK_KHR_maintenance2"};

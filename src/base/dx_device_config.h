@@ -15,6 +15,7 @@ public:
     IDxcUtils *dxcUtils{};
     ID3D12DescriptorHeap *shaderDescriptor{};
     ID3D12DescriptorHeap *samplerDescriptor{};
+    luisa::vector<DXCustomCmd::EnhancedResourceUsage> resource_before_states;
     bool gpu_dump = false;
     DXDeviceConfig(
         ID3D12Device *device)
@@ -42,5 +43,8 @@ public:
     bool support_linear_sdr();
     bool UseDRED() const noexcept override {
         return gpu_dump;
+    }
+    luisa::span<DXCustomCmd::EnhancedResourceUsage const> before_states(uint64_t stream_handle) override {
+        return resource_before_states;
     }
 };

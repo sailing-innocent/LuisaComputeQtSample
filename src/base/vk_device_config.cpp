@@ -62,3 +62,16 @@ void get_vk_device(
     vk_instance = ptr->instance;
     gfx_queue_family_index = ptr->graphics_queue_family_index;
 }
+
+void set_vk_before_state(
+    luisa::compute::DeviceConfigExt *device_config_ext,
+    luisa::variant<
+        luisa::compute::Argument::Buffer,
+        luisa::compute::Argument::Texture,
+        luisa::compute::Argument::BindlessArray> const &resource,
+    VkResourceUsageType resource_type) {
+    auto ptr = static_cast<VkDeviceConfig *>(device_config_ext);
+    ptr->resource_before_states.emplace_back(
+        resource,
+        (VKCustomCmd::ResourceUsageType)resource_type);
+}

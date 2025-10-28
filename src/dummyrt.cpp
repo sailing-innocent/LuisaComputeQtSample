@@ -78,9 +78,12 @@ int64_t App::create_texture(uint width, uint height) {
 void App::update() {
     // cmd_list << clear_shader(dummy_image).dispatch(resolution);
     float2 f_res = {(float)resolution.x, (float)resolution.y};
-    std::pair<luisa::compute::ImageView<float>, VkResourceUsageType> usage{
-        dummy_image, VkResourceUsageType::ComputeRead};
     cmd_list
         << draw_shader(dummy_image, clk.toc() * 1e-3, f_res).dispatch(resolution);
     stream << cmd_list.commit();
+    if (device.backend_name() == "dx") {
+        set_dx_before_state(device_config_ext, Argument::Texture{dummy_image.handle(), 0}, D3D12EnhancedResourceUsageType::RasterRead);
+    } else {
+        set_vk_before_state(device_config_ext, Argument::Texture{dummy_image.handle(), 0}, VkResourceUsageType::RasterRead);
+    }
 }

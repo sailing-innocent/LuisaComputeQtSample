@@ -5,15 +5,15 @@
 #include <luisa/core/logging.h>
 #include <luisa/backends/ext/dx_custom_cmd.h>
 #ifndef ThrowIfFailed
-#define ThrowIfFailed(x)                                                                     \
-    do {                                                                                     \
-        HRESULT hr_ = (x);                                                                   \
-        if (hr_ != S_OK) [[unlikely]] {                                                      \
-            LUISA_ERROR_WITH_LOCATION("D3D12 call '{}' failed with "                         \
-                                      "error {} (code = {}).",                               \
+#define ThrowIfFailed(x)                                                                       \
+    do {                                                                                       \
+        HRESULT hr_ = (x);                                                                     \
+        if (hr_ != S_OK) [[unlikely]] {                                                        \
+            LUISA_ERROR_WITH_LOCATION("D3D12 call '{}' failed with "                           \
+                                      "error {} (code = {}).",                                 \
                                       #x, ::dx_detail::d3d12_error_name(hr_), (long long)hr_); \
-            std::abort();                                                                    \
-        }                                                                                    \
+            std::abort();                                                                      \
+        }                                                                                      \
     } while (false)
 #endif
 namespace dx_detail {
@@ -212,4 +212,18 @@ void get_dx_device(
     ptr->adapter->GetDesc1(&desc);
     adaptor_luid = uint2(desc.AdapterLuid.HighPart, desc.AdapterLuid.LowPart);
 }
+
+void set_dx_before_state(
+    luisa::compute::DeviceConfigExt *device_config_ext,
+    luisa::variant<
+        luisa::compute::Argument::Buffer,
+        luisa::compute::Argument::Texture,
+        luisa::compute::Argument::BindlessArray> const &resource,
+    D3D12EnhancedResourceUsageType resource_type) {
+    auto ptr = static_cast<DXDeviceConfig *>(device_config_ext);
+    ptr->resource_before_states.emplace_back(
+        resource,
+        (DXCustomCmd::EnhancedResourceUsageType)resource_type);
+}
+
 #undef ThrowIfFailed

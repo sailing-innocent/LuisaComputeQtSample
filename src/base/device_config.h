@@ -71,3 +71,19 @@ enum class VkResourceUsageType {
     RasterAccelRead,
     RasterUAV,
 };
+
+void set_dx_before_state(
+    luisa::compute::DeviceConfigExt *device_config_ext,
+    luisa::variant<
+        luisa::compute::Argument::Buffer,
+        luisa::compute::Argument::Texture,
+        luisa::compute::Argument::BindlessArray> const &resource,
+    D3D12EnhancedResourceUsageType resource_type);
+
+void set_vk_before_state(
+    luisa::compute::DeviceConfigExt *device_config_ext,
+    luisa::variant<
+        luisa::compute::Argument::Buffer,
+        luisa::compute::Argument::Texture,
+        luisa::compute::Argument::BindlessArray> const &resource,
+    VkResourceUsageType resource_type);
