@@ -6,9 +6,13 @@
 using namespace luisa;
 using namespace luisa::compute;
 
-void App::init(const char* ws, const char* backend_name, void* rhi_device, void* rhi_instance /*/only for vulkan*/, void* rhi_physical_device /*only for vulkan*/)
+
+void App::init(
+    luisa::compute::Context&& ctx,
+    const char* ws, const char* backend_name, void* rhi_device, void* rhi_instance /*/only for vulkan*/, void* rhi_physical_device /*only for vulkan*/
+)
 {
-    Context context(ws);
+    context.emplace(std::move(ctx));
     luisa::string_view backend = backend_name;
     bool gpu_dump;
 #ifdef NDEBUG
@@ -17,26 +21,26 @@ void App::init(const char* ws, const char* backend_name, void* rhi_device, void*
     gpu_dump = true;
 #endif
     DeviceConfig device_config = {};
-    #ifdef LUISA_QT_SAMPLE_ENABLE_DX
+#ifdef LUISA_QT_SAMPLE_ENABLE_DX
     if (backend == "dx")
     {
         device_config.extension = make_dx_device_config(rhi_device, gpu_dump);
     }
-    #endif
-    #ifdef LUISA_QT_SAMPLE_ENABLE_VK
+#endif
+#ifdef LUISA_QT_SAMPLE_ENABLE_VK
     if (backend == "vk")
     {
         device_config.extension = make_vk_device_config(rhi_device, rhi_instance, rhi_physical_device);
     }
-    #endif
-    #ifdef LUISA_QT_SAMPLE_ENABLE_METAL
+#endif
+#ifdef LUISA_QT_SAMPLE_ENABLE_METAL
     if (backend == "metal")
     {
         device_config.extension = nullptr;
     }
-    #endif
-    device_config_ext = device_config.extension.get();
-    device                = context.create_device(backend, &device_config);
+#endif
+    device_config_ext     = device_config.extension.get();
+    device                = context->create_device(backend, &device_config);
     stream                = device.create_stream(StreamTag::GRAPHICS);
     Kernel2D clear_kernel = [](ImageFloat image) noexcept {
         image.write(dispatch_id().xy(), make_float4(1.0f));
@@ -83,6 +87,10 @@ void App::update()
     float2 f_res = { (float)resolution.x, (float)resolution.y };
     cmd_list << draw_shader(dummy_image, clk.toc() * 1e-3, f_res).dispatch(resolution);
     stream << cmd_list.commit();
+}
+App::~App()
+{
+    stream.synchronize();
 }
 
 // int main(int argc, char *argv[]) {

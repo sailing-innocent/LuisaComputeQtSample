@@ -18,11 +18,11 @@ int main(int argc, char** argv)
 {
     // 使用QApplication而不是QGuiApplication以支持widgets
     QApplication app(argc, argv);
-
     if (argc < 2)
     {
         qInfo("use 'rhi_window_sample dx/vk/metal' to select backend");
     }
+    luisa::compute::Context ctx{ argv[0] };
     std::string backend = argv[1];
     QRhi::Implementation graphicsApi;
     if (backend == "dx")
@@ -41,21 +41,24 @@ int main(int argc, char** argv)
     {
         qInfo("Invalid backend, choose between dx/vk");
     }
-
 // For Vulkan.
 #if QT_CONFIG(vulkan)
     QVulkanInstance inst;
     if (graphicsApi == QRhi::Vulkan)
     {
-        // Request validation, if available. This is completely optional
-        // and has a performance impact, and should be avoided in production use.
-        inst.setLayers({ "VK_LAYER_KHRONOS_validation" });
-        // Play nice with QRhi.
-        inst.setExtensions(QRhiVulkanInitParams::preferredInstanceExtensions());
+        auto const& vk_backend = ctx.load_backend("vk");
+        luisa::vector<luisa::string> inst_exts;
+        auto vk_instance = vk_backend.invoke<VkInstance(bool enable_validation, const luisa::string* extra_instance_exts, size_t extra_instance_ext_count, const char* custom_vk_lib_path, const char* custom_vk_lib_name)>(
+            "init_vk_instance",
+            true,
+            inst_exts.data(),
+            inst_exts.size(),
+            nullptr, nullptr
+        );
+        inst.setVkInstance(vk_instance);
         if (!inst.create())
         {
-            qWarning("Failed to create Vulkan instance, switching to D3D12");
-            graphicsApi = QRhi::D3D12;
+            LUISA_ERROR("Vulkan failed.");
         }
     }
 #endif
@@ -85,9 +88,9 @@ int main(int argc, char** argv)
     topBarLayout->addWidget(statusLabel);
 
     mainLayout->addLayout(topBarLayout);
-
     HelloWindow* renderWindow    = new HelloWindow(graphicsApi);
-    renderWindow->workspace_path = argv[0]; // set runtime workspace path
+    renderWindow->context        = &ctx;
+    renderWindow->workspace_path = luisa::to_string(luisa::filesystem::path(argv[0]).parent_path()); // set runtime workspace path
 
 #if QT_CONFIG(vulkan)
     if (graphicsApi == QRhi::Vulkan)
@@ -186,6 +189,5 @@ int main(int argc, char** argv)
     // 清理资源
     if (renderWindow->handle())
         renderWindow->releaseSwapChain();
-
     return ret;
 }

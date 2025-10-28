@@ -1,4 +1,4 @@
-target("rhi_window_sample")
+tool_target_with_lc("rhi_window_sample")
     _config_project({
         project_kind = "binary"
     })

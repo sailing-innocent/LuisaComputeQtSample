@@ -1,6 +1,10 @@
-function main(lc_path)
+function main(lc_path, qt_path)
     if type(lc_path) ~= "string" or not os.exists(lc_path) then
         utils.error("LuisaCompute path illegal.")
+        return
+    end
+    if type(qt_path) ~= "string" or not os.exists(qt_path) then
+        utils.error("QT path illegal.")
         return
     end
 
@@ -26,11 +30,16 @@ function main(lc_path)
     }
     -- write sdk-dir
     lc_path = lc_path:gsub('\\', '/')
+    qt_path = qt_path:gsub('\\', '/')
     lc_options.lc_sdk_dir = "'" .. path.join(lc_path, "SDKs"):gsub('\\', '/') .. "'"
 
     local file = io.open("lc_options.generated.lua", "w")
     file:write("lc_dir = '")
     file:write(lc_path)
+    file:write("'\n")
+
+    file:write("qt_path = '")
+    file:write(qt_path)
     file:write("'\n")
     file:write("lc_options = {\n")
     for key, value in pairs(lc_options) do

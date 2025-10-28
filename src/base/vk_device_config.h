@@ -5,7 +5,7 @@
 
 using namespace luisa;
 using namespace luisa::compute;
-struct  VkDeviceConfig : public VulkanDeviceConfigExt {
+struct VkDeviceConfig : public VulkanDeviceConfigExt {
     VkInstance instance{};
     VkPhysicalDevice physical_device{};
     VkDevice device{};
@@ -22,6 +22,7 @@ struct  VkDeviceConfig : public VulkanDeviceConfigExt {
     {
         return true; // TODO: we may don't want to load DXC in random target platform
     }
+    ExternalDevice create_external_device();
     void readback_vulkan_device(
         VkInstance instance,
         VkPhysicalDevice physical_device,

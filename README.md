@@ -3,8 +3,8 @@
 这是一个样例来展示如何使用LuisaCompute和Qt搭建比较复杂的桌面端样例
 
 make sure Qt 6.6+ installed
-- `xmake l setup.lua #LuisaComput dir#`: Set LC path
-- `xmake f --qt="your/qt/sdk/6.6+/msvc"`: Set valid qt path
+- `xmake l setup.lua #LuisaComput dir# #QT-SDK dir#`: Set LC path and valid qt path
+- `xmake f -c"` config
 - `xmake`: compile
 - `xmake run rhi_window_sample dx`, run with Direct3D 12 backend (change to `vk` for Vulkan backend)
 

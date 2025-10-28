@@ -102,6 +102,25 @@ void RhiWindow::init()
         QRhiVulkanInitParams params;
         params.inst   = vulkanInstance();
         params.window = this;
+        params.deviceExtensions.emplace_back("VK_KHR_multiview");
+        params.deviceExtensions.emplace_back("VK_KHR_maintenance2");
+        params.deviceExtensions.emplace_back(VK_KHR_TIMELINE_SEMAPHORE_EXTENSION_NAME);
+        // params.deviceExtensions.emplace_back(VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME);
+        params.deviceExtensions.emplace_back(VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME);
+        params.deviceExtensions.emplace_back(VK_KHR_RAY_QUERY_EXTENSION_NAME);
+        params.deviceExtensions.emplace_back(VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME);
+        params.deviceExtensions.emplace_back(VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME);
+    #ifdef LUISA_VULKAN_ENABLE_CUDA_INTEROP
+        params.deviceExtensions.emplace_back(VK_KHR_EXTERNAL_MEMORY_EXTENSION_NAME);
+        params.deviceExtensions.emplace_back(VK_KHR_EXTERNAL_SEMAPHORE_EXTENSION_NAME);
+        #ifdef LUISA_PLATFORM_WINDOWS
+        params.deviceExtensions.emplace_back(VK_KHR_EXTERNAL_MEMORY_WIN32_EXTENSION_NAME);
+        params.deviceExtensions.emplace_back(VK_KHR_EXTERNAL_SEMAPHORE_WIN32_EXTENSION_NAME);
+        #else
+        params.deviceExtensions.emplace_back(VK_KHR_EXTERNAL_MEMORY_FD_EXTENSION_NAME);
+        params.deviceExtensions.emplace_back(VK_KHR_EXTERNAL_SEMAPHORE_FD_EXTENSION_NAME);
+        #endif
+    #endif
         m_rhi.reset(QRhi::create(QRhi::Vulkan, &params));
     }
 #endif
@@ -140,19 +159,18 @@ void RhiWindow::init()
     m_rp.reset(m_sc->newCompatibleRenderPassDescriptor());
     m_sc->setRenderPassDescriptor(m_rp.get());
 
-    void* rhi_device = nullptr;
 #if QT_CONFIG(vulkan)
     if (m_graphicsApi == QRhi::Vulkan)
     {
         const QRhiVulkanNativeHandles* handle = (QRhiVulkanNativeHandles*)m_rhi->nativeHandles();
-        customInit(workspace_path.c_str(), (void*)handle->dev, handle->inst /*/only for vulkan*/, handle->physDev /*only for vulkan*/);
+        customInit(luisa::compute::Context{ *context }, workspace_path.c_str(), (void*)handle->dev, handle->inst->vkInstance() /*/only for vulkan*/, handle->physDev /*only for vulkan*/);
     }
 #endif
 #ifdef Q_OS_WIN
     if (m_graphicsApi == QRhi::D3D12)
     {
         const QRhiD3D12NativeHandles* handle = (QRhiD3D12NativeHandles*)m_rhi->nativeHandles();
-        customInit(workspace_path.c_str(), (void*)handle->dev, nullptr /*/only for vulkan*/, nullptr /*only for vulkan*/);
+        customInit(luisa::compute::Context{ *context }, workspace_path.c_str(), (void*)handle->dev, nullptr /*/only for vulkan*/, nullptr /*only for vulkan*/);
     }
 #endif
 }
@@ -228,7 +246,7 @@ void HelloWindow::ensureFullscreenTexture(const QSize& pixelSize, QRhiResourceUp
         m_texture->setPixelSize(pixelSize);
 
     uint64_t handle = app.create_texture(pixelSize.width(), pixelSize.height());
-    m_texture->createFrom({ handle, 0 });
+    m_texture->createFrom({ handle, m_graphicsApi == QRhi::Vulkan ? 1 : 0 });
 
     // m_texture->create();
     // uint64_t handle = m_texture->nativeTexture().object;
@@ -256,15 +274,15 @@ void HelloWindow::ensureFullscreenTexture(const QSize& pixelSize, QRhiResourceUp
     // u->uploadTexture(m_texture.get(), image);
 }
 
-void HelloWindow::customInit(const char* ws, void* rhi_device, void* rhi_instance /*/only for vulkan*/, void* rhi_physical_device /*only for vulkan*/)
+void HelloWindow::customInit(luisa::compute::Context&& ctx, const char* ws, void* rhi_device, void* rhi_instance /*/only for vulkan*/, void* rhi_physical_device /*only for vulkan*/)
 {
     if (m_graphicsApi == QRhi::D3D12)
     {
-        app.init(ws, "dx", rhi_device, rhi_instance, rhi_physical_device);
+        app.init(std::move(ctx), ws, "dx", rhi_device, rhi_instance, rhi_physical_device);
     }
     if (m_graphicsApi == QRhi::Vulkan)
     {
-        app.init(ws, "vk", rhi_device, rhi_instance, rhi_physical_device);
+        app.init(std::move(ctx), ws, "vk", rhi_device, rhi_instance, rhi_physical_device);
     }
 
     m_initialUpdates = m_rhi->nextResourceUpdateBatch();
