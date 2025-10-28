@@ -36,8 +36,12 @@ struct DUMMY_API App {
     luisa::compute::Shader<2, luisa::compute::Image<float>, float, luisa::compute::float2> draw_shader;
     luisa::uint2 resolution;
     luisa::Clock clk;
+    void* vk_physical_device{};
+    void* vk_instance{};
+    uint32_t vk_queue_family_idx{};
+    luisa::uint2 dx_adaptor_luid;
 
-    void init(const char *ws, const char *backend_name, void *rhi_device, void *rhi_instance /*/only for vulkan*/, void *rhi_physical_device /*only for vulkan*/);
+    void init(luisa::compute::Context &&ctx, const char *backend_name);
     int64_t create_texture(uint width, uint height);
     void update();
 };

@@ -50,7 +50,7 @@ int main(int argc, char** argv)
         luisa::vector<luisa::string> inst_exts;
         auto vk_instance = vk_backend.invoke<VkInstance(bool enable_validation, const luisa::string* extra_instance_exts, size_t extra_instance_ext_count, const char* custom_vk_lib_path, const char* custom_vk_lib_name)>(
             "init_vk_instance",
-            true,
+            false,
             inst_exts.data(),
             inst_exts.size(),
             nullptr, nullptr

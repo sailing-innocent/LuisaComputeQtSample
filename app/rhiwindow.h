@@ -4,23 +4,22 @@
 #include <rhi/qrhi.h>
 #include "dummyrt.h"
 
-class RhiWindow : public QWindow
-{
+class RhiWindow : public QWindow {
 public:
-    luisa::compute::Context* context{};
+    luisa::compute::Context *context{};
     RhiWindow(QRhi::Implementation graphicsApi);
     QString graphicsApiName() const;
     void releaseSwapChain();
     std::string workspace_path;
 
 protected:
-    virtual void customInit(luisa::compute::Context&& ctx, const char* ws, void* rhi_device, void* rhi_instance /*/only for vulkan*/, void* rhi_physical_device /*only for vulkan*/) = 0;
-    virtual void customRender()                                                                                                                                                      = 0;
+    virtual void customInit(luisa::compute::Context &&ctx) = 0;
+    virtual void customRender() = 0;
     std::unique_ptr<QRhi> m_rhi;
     std::unique_ptr<QRhiSwapChain> m_sc;
     std::unique_ptr<QRhiRenderBuffer> m_ds;
     std::unique_ptr<QRhiRenderPassDescriptor> m_rp;
-    bool m_hasSwapChain                = false;
+    bool m_hasSwapChain = false;
     QRhi::Implementation m_graphicsApi = QRhi::D3D12;
 
 private:
@@ -28,24 +27,23 @@ private:
     void resizeSwapChain();
     void render();
 
-    void exposeEvent(QExposeEvent*) override;
-    bool event(QEvent*) override;
+    void exposeEvent(QExposeEvent *) override;
+    bool event(QEvent *) override;
 
-    bool m_initialized  = false;
-    bool m_notExposed   = false;
+    bool m_initialized = false;
+    bool m_notExposed = false;
     bool m_newlyExposed = false;
 };
 
-class HelloWindow : public RhiWindow
-{
+class HelloWindow : public RhiWindow {
 public:
     App app;
     HelloWindow(QRhi::Implementation graphicsApi);
-    void customInit(luisa::compute::Context&& ctx, const char* ws, void* rhi_device, void* rhi_instance /*/only for vulkan*/, void* rhi_physical_device /*only for vulkan*/) override;
+    void customInit(luisa::compute::Context &&ctx) override;
     void customRender() override;
 
 private:
-    void ensureFullscreenTexture(const QSize& pixelSize, QRhiResourceUpdateBatch* u);
+    void ensureFullscreenTexture(const QSize &pixelSize, QRhiResourceUpdateBatch *u);
 
     std::unique_ptr<QRhiBuffer> m_vbuf;
     std::unique_ptr<QRhiBuffer> m_ubuf;
@@ -56,5 +54,5 @@ private:
     std::unique_ptr<QRhiShaderResourceBindings> m_fullscreenQuadSrb;
     std::unique_ptr<QRhiGraphicsPipeline> m_fullscreenQuadPipeline;
 
-    QRhiResourceUpdateBatch* m_initialUpdates = nullptr;
+    QRhiResourceUpdateBatch *m_initialUpdates = nullptr;
 };

@@ -1,6 +1,9 @@
 #include "dx_device_config.h"
+#include "device_config.h"
+#include <luisa/runtime/image.h>
 #include <wrl/client.h>
 #include <luisa/core/logging.h>
+#include <luisa/backends/ext/dx_custom_cmd.h>
 #ifndef ThrowIfFailed
 #define ThrowIfFailed(x)                                                                     \
     do {                                                                                     \
@@ -8,7 +11,7 @@
         if (hr_ != S_OK) [[unlikely]] {                                                      \
             LUISA_ERROR_WITH_LOCATION("D3D12 call '{}' failed with "                         \
                                       "error {} (code = {}).",                               \
-                                      #x, dx_detail::d3d12_error_name(hr_), (long long)hr_); \
+                                      #x, ::dx_detail::d3d12_error_name(hr_), (long long)hr_); \
             std::abort();                                                                    \
         }                                                                                    \
     } while (false)
@@ -151,7 +154,7 @@ DXGI_OUTPUT_DESC1 DXDeviceConfig::GetOutput(HWND window_handle) {
         int by2 = r.bottom;
 
         // Compute the intersection
-        int intersectArea = dx_detail::ComputeIntersectionArea(ax1, ay1, ax2, ay2, bx1, by1, bx2, by2);
+        int intersectArea = ::dx_detail::ComputeIntersectionArea(ax1, ay1, ax2, ay2, bx1, by1, bx2, by2);
         if (intersectArea > bestIntersectArea) {
             bestOutput = currentOutput;
             bestIntersectArea = static_cast<float>(intersectArea);
@@ -198,5 +201,15 @@ auto DXDeviceConfig::GetGPUAllocatorSettings() noexcept -> luisa::optional<GPUAl
         .sparse_buffer_block_size = 0,
         .sparse_image_block_size = 64ull * 1024ull * 1024ull,
     };
+}
+void get_dx_device(
+    luisa::compute::DeviceConfigExt *device_config_ext,
+    void *&device,
+    uint2 &adaptor_luid) {
+    auto ptr = static_cast<DXDeviceConfig *>(device_config_ext);
+    device = ptr->device;
+    DXGI_ADAPTER_DESC1 desc;
+    ptr->adapter->GetDesc1(&desc);
+    adaptor_luid = uint2(desc.AdapterLuid.HighPart, desc.AdapterLuid.LowPart);
 }
 #undef ThrowIfFailed
