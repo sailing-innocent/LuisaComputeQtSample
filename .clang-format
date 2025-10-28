@@ -1,151 +1,123 @@
-UseTab: Never
-TabWidth: 4
+# Generated from CLion C/C++ Code Style settings
+BasedOnStyle: LLVM
 AccessModifierOffset: -4
-IndentWidth: 4
-ObjCBlockIndentWidth: 4
-ContinuationIndentWidth: 4 # 禁用缩进是为了防止反射宏出问题, what can i say, Mamba Out!
-MaxEmptyLinesToKeep: 1
-
-AllowShortIfStatementsOnASingleLine: true
-AllowShortBlocksOnASingleLine: true
-
-AlignConsecutiveAssignments: true
-# AlignConsecutiveDeclarations: true
-AlignTrailingComments: true
-SpacesBeforeTrailingComments: 1
-SpacesInSquareBrackets: false
-IndentCaseLabels: false
-SpaceBeforeAssignmentOperators: true
-AlignAfterOpenBracket: BlockIndent
-BreakConstructorInitializersBeforeComma: true
-SpaceAfterCStyleCast: false
-SpaceBeforeParens: ControlStatements
-SpaceBeforeRangeBasedForLoopColon: true
-SpaceInEmptyParentheses: false
-SortUsingDeclarations: false
-
-ColumnLimit: 0
-PointerAlignment: Left
-ReferenceAlignment: Left
+EmptyLineBeforeAccessModifier: Leave
+EmptyLineAfterAccessModifier: Leave
+AlignAfterOpenBracket: Align
+AlignConsecutiveAssignments: None
+AlignOperands: Align
+ConstructorInitializerAllOnOneLineOrOnePerLine: false
+AllowAllArgumentsOnNextLine: true
+AllowAllConstructorInitializersOnNextLine: true
 AllowAllParametersOfDeclarationOnNextLine: true
-AlignEscapedNewlinesLeft: true
-
+AllowShortBlocksOnASingleLine: Always
+AllowShortCaseLabelsOnASingleLine: true
+AllowShortFunctionsOnASingleLine: All
+AllowShortIfStatementsOnASingleLine: true
+AllowShortLambdasOnASingleLine: All
+AllowShortLoopsOnASingleLine: true
+AllowShortEnumsOnASingleLine: true
+AlwaysBreakAfterReturnType: None
+AlwaysBreakTemplateDeclarations: MultiLine
+BreakBeforeBraces: Attach
+Cpp11BracedListStyle: true
+IndentWrappedFunctionNames: false
+LambdaBodyIndentation: Signature
+ObjCBlockIndentWidth: 4
+PPIndentWidth: 2
+BraceWrapping:
+  AfterCaseLabel: false
+  AfterClass: false
+  AfterControlStatement: Never
+  AfterEnum: false
+  AfterFunction: false
+  AfterNamespace: false
+  AfterUnion: false
+  BeforeCatch: false
+  BeforeElse: false
+  BeforeLambdaBody: false
+  IndentBraces: false
+  SplitEmptyFunction: false
+  SplitEmptyRecord: true
+  SplitEmptyNamespace: false
+  AfterObjCDeclaration: false
+  AfterExternBlock: false
+  AfterStruct: false
 BreakBeforeBinaryOperators: None
 BreakBeforeTernaryOperators: false
-AlignOperands: Align
+BreakBeforeConceptDeclarations: true
+BreakBeforeInheritanceComma: false
+BreakAfterJavaFieldAnnotations: true
+BreakStringLiterals: true
+BreakConstructorInitializersBeforeComma: false
+AlwaysBreakAfterDefinitionReturnType: None
+AlwaysBreakBeforeMultilineStrings: false
+ColumnLimit: 0
+SortIncludes: Never
+SortUsingDeclarations: false
+CompactNamespaces: true
+ContinuationIndentWidth: 4
+IndentCaseLabels: true
+IndentPPDirectives: None
+IndentExternBlock: NoIndent
+IndentWidth: 4
+KeepEmptyLinesAtTheStartOfBlocks: true
+MaxEmptyLinesToKeep: 1
+NamespaceIndentation: None
+ObjCSpaceAfterProperty: false
+ObjCSpaceBeforeProtocolList: false
+PointerAlignment: Right
+ReflowComments: false
+SpaceAfterCStyleCast: false
+SpaceAfterLogicalNot: false
+SpaceAfterTemplateKeyword: false
+SpaceBeforeAssignmentOperators: true
+SpaceBeforeCpp11BracedList: false
+SpaceBeforeCtorInitializerColon: true
+SpaceBeforeInheritanceColon: true
+SpaceBeforeRangeBasedForLoopColon: true
+SpaceInEmptyParentheses: false
+SpacesBeforeTrailingComments: 0
+SpacesInAngles: false
+SpacesInCStyleCastParentheses: false
+SpacesInContainerLiterals: false
+SpacesInParentheses: false
+SpacesInSquareBrackets: false
+TabWidth: 4
+UseTab: Never
+IndentRequiresClause: true
+SpacesInConditionalStatement: false
+AlignEscapedNewlines: Left
+ReferenceAlignment: Right
+ShortNamespaceLines: 0
 
-BinPackArguments: true
-BinPackParameters: true
-IndentPPDirectives: BeforeHash
+# The following options make the DSL macros behave
+#   more like the C++ keywords they correspond to.
+SpaceBeforeParens: Custom
+SpaceBeforeParensOptions:
+  AfterControlStatements: true
+  AfterForeachMacros: false
+  AfterFunctionDeclarationName: false
+  AfterFunctionDefinitionName: false
+  AfterIfMacros: true
+  AfterOverloadedOperator: false
+  BeforeNonEmptyParentheses: false
 
-BreakBeforeBraces: Custom
-BraceWrapping:
-  AfterClass: true
-  AfterStruct: false
-  AfterEnum: true
-  AfterNamespace: true
-  AfterUnion: true
-  AfterFunction: true
-  BeforeElse: true
-  IndentBraces: false
-  AfterExternBlock: false
-  AfterControlStatement: true
-Cpp11BracedListStyle: false
-
-RequiresClausePosition: SingleLine
-
-AttributeMacros: ["SUGOI_UNLIKELY", "SUGOI_FORCEINLINE", "FORCEINLINE"]
-WhitespaceSensitiveMacros:
-  - "sattr"
-  - "spush_attr"
-  - "spop_attr"
-  - "sreflect_enum"
-  - "sreflect_struct"
-  - "sreflect_enum_class"
-  - "sreflect_interface"
-  - "sreflect_function"
-
-Macros:
-  # attr
-  - sattr(x)=/* x */
-  - sattr(x,y)=/* x */
-  - sattr(x,y,z)=/* x */
-  - sattr(x,y,z)=/* x */
-  - sattr(x,y,z,w)=/* x */
-  - sattr(x,y,z,w,a)=/* x */
-  - sattr(x,y,z,w,a,b)=/* x */
-  - sattr(x,y,z,w,a,b,c)=/* x */
-  - sattr(x,y,z,w,a,b,c,d)=/* x */
-  - sattr(x,y,z,w,a,b,c,d,e)=/* x */
-  # enum
-  - sreflect_enum(x)=enum class
-  - sreflect_enum(x,y)=enum class
-  - sreflect_enum(x,y,z)=enum class
-  - sreflect_enum(x,y,z)=enum class
-  - sreflect_enum(x,y,z,w)=enum class
-  - sreflect_enum(x,y,z,w,a)=enum class
-  - sreflect_enum(x,y,z,w,a,b)=enum class
-  - sreflect_enum(x,y,z,w,a,b,c)=enum class
-  - sreflect_enum(x,y,z,w,a,b,c,d)=enum class
-  - sreflect_enum(x,y,z,w,a,b,c,d,e)=enum class
-  # enum class
-  - sreflect_enum_class(x)=enum class
-  - sreflect_enum_class(x,y)=enum class
-  - sreflect_enum_class(x,y,z)=enum class
-  - sreflect_enum_class(x,y,z)=enum class
-  - sreflect_enum_class(x,y,z,w)=enum class
-  - sreflect_enum_class(x,y,z,w,a)=enum class
-  - sreflect_enum_class(x,y,z,w,a,b)=enum class
-  - sreflect_enum_class(x,y,z,w,a,b,c)=enum class
-  - sreflect_enum_class(x,y,z,w,a,b,c,d)=enum class
-  - sreflect_enum_class(x,y,z,w,a,b,c,d,e)=enum class
-  # struct
-  - sreflect_struct(x)=struct
-  - sreflect_struct(x,y)=struct
-  - sreflect_struct(x,y,z)=struct
-  - sreflect_struct(x,y,z)=struct
-  - sreflect_struct(x,y,z,w)=struct
-  - sreflect_struct(x,y,z,w,a)=struct
-  - sreflect_struct(x,y,z,w,a,b)=struct
-  - sreflect_struct(x,y,z,w,a,b,c)=struct
-  - sreflect_struct(x,y,z,w,a,b,c,d)=struct
-  - sreflect_struct(x,y,z,w,a,b,c,d,e)=struct
-  # interface
-  - sreflect_interface(x)=struct
-  - sreflect_interface(x,y)=struct
-  - sreflect_interface(x,y,z)=struct
-  - sreflect_interface(x,y,z)=struct
-  - sreflect_interface(x,y,z,w)=struct
-  - sreflect_interface(x,y,z,w,a)=struct
-  - sreflect_interface(x,y,z,w,a,b)=struct
-  - sreflect_interface(x,y,z,w,a,b,c)=struct
-  - sreflect_interface(x,y,z,w,a,b,c,d)=struct
-  - sreflect_interface(x,y,z,w,a,b,c,d,e)=struct
-  # interface
-  - sreflect_function(x)=struct
-  - sreflect_function(x,y)=struct
-  - sreflect_function(x,y,z)=struct
-  - sreflect_function(x,y,z)=struct
-  - sreflect_function(x,y,z,w)=struct
-  - sreflect_function(x,y,z,w,a)=struct
-  - sreflect_function(x,y,z,w,a,b)=struct
-  - sreflect_function(x,y,z,w,a,b,c)=struct
-  - sreflect_function(x,y,z,w,a,b,c,d)=struct
-  - sreflect_function(x,y,z,w,a,b,c,d,e)=struct
-  # struct
-  - sreflect_managed_component(x)=struct
-  - sreflect_managed_component(x,y)=struct
-  - sreflect_managed_component(x,y,z)=struct
-  - sreflect_managed_component(x,y,z)=struct
-  - sreflect_managed_component(x,y,z,w)=struct
-  - sreflect_managed_component(x,y,z,w,a)=struct
-  - sreflect_managed_component(x,y,z,w,a,b)=struct
-  - sreflect_managed_component(x,y,z,w,a,b,c)=struct
-  - sreflect_managed_component(x,y,z,w,a,b,c,d)=struct
-  - sreflect_managed_component(x,y,z,w,a,b,c,d,e)=struct
-
-ForEachMacros: ["forloop"]
-
-BreakAfterAttributes: Leave
-
-SortIncludes: false
+# This is currently a workaround. Switching to
+#   `Macros` from clangd-17 will be better.
+ForEachMacros:
+  - LUISA_STRUCT
+  - LUISA_BINDING_GROUP
+  - LUISA_BINDING_GROUP_TEMPLATE
+IfMacros:
+  - $if
+  - $elif
+  - $else
+  - $for
+  - $while
+  - $loop
+  - $switch
+  - $case
+  - $default
+StatementMacros:
+  - LUISA_MAP
