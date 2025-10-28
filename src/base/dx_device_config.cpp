@@ -221,6 +221,7 @@ void set_dx_before_state(
         luisa::compute::Argument::BindlessArray> const &resource,
     D3D12EnhancedResourceUsageType resource_type) {
     auto ptr = static_cast<DXDeviceConfig *>(device_config_ext);
+    ptr->resource_before_states.clear();
     ptr->resource_before_states.emplace_back(
         resource,
         (DXCustomCmd::EnhancedResourceUsageType)resource_type);

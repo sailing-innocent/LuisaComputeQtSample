@@ -17,12 +17,13 @@
 int main(int argc, char** argv)
 {
     // 使用QApplication而不是QGuiApplication以支持widgets
-    QApplication app(argc, argv);
     if (argc < 2)
     {
         qInfo("use 'rhi_window_sample dx/vk/metal' to select backend");
     }
     luisa::compute::Context ctx{ argv[0] };
+    luisa::compute::Stream stream;
+    QApplication app(argc, argv);
     std::string backend = argv[1];
     QRhi::Implementation graphicsApi;
     if (backend == "dx")
@@ -185,7 +186,9 @@ int main(int argc, char** argv)
     mainWindow.show();
 
     int ret = app.exec();
-
+    // Move stream here to make it destroy later than QT
+    stream = std::move(renderWindow->app.stream);
+    stream.synchronize();
     // 清理资源
     if (renderWindow->handle())
         renderWindow->releaseSwapChain();

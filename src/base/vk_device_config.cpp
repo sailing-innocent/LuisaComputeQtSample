@@ -71,6 +71,7 @@ void set_vk_before_state(
         luisa::compute::Argument::BindlessArray> const &resource,
     VkResourceUsageType resource_type) {
     auto ptr = static_cast<VkDeviceConfig *>(device_config_ext);
+    ptr->resource_before_states.clear();
     ptr->resource_before_states.emplace_back(
         resource,
         (VKCustomCmd::ResourceUsageType)resource_type);

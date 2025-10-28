@@ -76,7 +76,7 @@ int64_t App::create_texture(uint width, uint height) {
 }
 
 void App::update() {
-    // cmd_list << clear_shader(dummy_image).dispatch(resolution);
+    cmd_list << clear_shader(dummy_image).dispatch(resolution);
     float2 f_res = {(float)resolution.x, (float)resolution.y};
     cmd_list
         << draw_shader(dummy_image, clk.toc() * 1e-3, f_res).dispatch(resolution);
@@ -86,4 +86,7 @@ void App::update() {
     } else {
         set_vk_before_state(device_config_ext, Argument::Texture{dummy_image.handle(), 0}, VkResourceUsageType::RasterRead);
     }
+}
+App::~App() {
+    LUISA_ASSERT(!stream, "Stream must moved before dtor.");
 }

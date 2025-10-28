@@ -44,4 +44,5 @@ struct DUMMY_API App {
     void init(luisa::compute::Context &&ctx, const char *backend_name);
     int64_t create_texture(uint width, uint height);
     void update();
+    ~App();
 };
