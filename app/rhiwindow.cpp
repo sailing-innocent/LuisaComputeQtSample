@@ -4,7 +4,11 @@
 #include <QPlatformSurfaceEvent>
 #include <QPainter>
 #include <QFile>
+#include <QKeyEvent>
+#include <QMouseEvent>
+#include <QDebug>
 #include <rhi/qshader.h>
+
 static QShader getShader(const QString &name) {
     QFile f(name);
     if (f.open(QIODevice::ReadOnly))
@@ -30,6 +34,8 @@ RhiWindow::RhiWindow(QRhi::Implementation graphicsApi)
             setSurfaceType(Direct3DSurface);
             break;
     }
+    // 设置窗口标志以接收键盘事件
+    setFlags(Qt::Window | Qt::FramelessWindowHint);
 }
 
 QString RhiWindow::graphicsApiName() const {
@@ -46,6 +52,7 @@ QString RhiWindow::graphicsApiName() const {
 }
 
 void RhiWindow::exposeEvent(QExposeEvent *) {
+    /// 属于Window的特殊事件，将Window展示出来的时候触发exposeEvent
     // initialize and start rendering when the window becomes usable for graphics purposes
     if (isExposed() && !m_initialized) {
         init();
@@ -74,6 +81,7 @@ void RhiWindow::exposeEvent(QExposeEvent *) {
 }
 
 bool RhiWindow::event(QEvent *e) {
+    // 通用事件处理
     switch (e->type()) {
         case QEvent::UpdateRequest:
             render();
@@ -189,6 +197,7 @@ void RhiWindow::render() {
     QRhiCommandBuffer *cb = m_sc->currentFrameCommandBuffer();
     const QSize outputSizeInPixels = m_sc->currentPixelSize();
     ensureFullscreenTexture(outputSizeInPixels, resourceUpdates);
+
     renderer->update();
 
     cb->beginPass(m_sc->currentFrameRenderTarget(), Qt::black, {1.0f, 0}, resourceUpdates);
@@ -213,4 +222,51 @@ void RhiWindow::ensureFullscreenTexture(const QSize &pixelSize, QRhiResourceUpda
 
     uint64_t handle = renderer->get_present_texture(luisa::uint2(pixelSize.width(), pixelSize.height()));
     m_texture->createFrom({handle, m_graphicsApi == QRhi::Vulkan ? 1 : 0});
+}
+
+void RhiWindow::keyPressEvent(QKeyEvent *event) {
+    QString keyName;
+    switch (event->key()) {
+        case Qt::Key_W: keyName = "W"; break;
+        case Qt::Key_A: keyName = "A"; break;
+        case Qt::Key_S: keyName = "S"; break;
+        case Qt::Key_D: keyName = "D"; break;
+        default: keyName = QString("Key(%1)").arg(event->key()); break;
+    }
+    
+    QString keyInfo = QString("Key Pressed: %1 (code: %2)").arg(keyName).arg(event->key());
+    qInfo() << keyInfo;
+    emit keyPressed(keyInfo);
+    
+    QWindow::keyPressEvent(event);
+}
+
+void RhiWindow::mousePressEvent(QMouseEvent *event) {
+    QString buttonName;
+    switch (event->button()) {
+        case Qt::LeftButton: buttonName = "Left"; break;
+        case Qt::RightButton: buttonName = "Right"; break;
+        case Qt::MiddleButton: buttonName = "Middle"; break;
+        default: buttonName = "Unknown"; break;
+    }
+    
+    QString mouseInfo = QString("Mouse Clicked: %1 button at (%2, %3)")
+                            .arg(buttonName)
+                            .arg(event->pos().x())
+                            .arg(event->pos().y());
+    qInfo() << mouseInfo;
+    emit mouseClicked(mouseInfo);
+    
+    QWindow::mousePressEvent(event);
+}
+
+void RhiWindow::mouseReleaseEvent(QMouseEvent *event) {
+    qInfo() << "RhiWindow::mouseReleaseEvent - Button:" << event->button();
+    QWindow::mouseReleaseEvent(event);
+}
+
+void RhiWindow::mouseMoveEvent(QMouseEvent *event) {
+    // 鼠标移动事件会很频繁，可以选择性输出
+    // qDebug() << "RhiWindow::mouseMoveEvent - Pos:" << event->pos();
+    QWindow::mouseMoveEvent(event);
 }

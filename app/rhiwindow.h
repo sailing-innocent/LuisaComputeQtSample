@@ -7,18 +7,26 @@
 struct IRenderer {
     virtual void init(QRhiNativeHandles &) = 0;
     virtual void update() = 0;
+    virtual void pause() = 0;
+    virtual void resume() = 0;
     virtual uint64_t get_present_texture(luisa::uint2 resolution) = 0;
 protected:
     ~IRenderer() = default;
 };
 
 class RhiWindow : public QWindow {
+    Q_OBJECT
 public:
     RhiWindow(QRhi::Implementation graphicsApi);
     QString graphicsApiName() const;
     void releaseSwapChain();
     std::string workspace_path;
-    IRenderer* renderer{};
+    IRenderer *renderer{};
+
+signals:
+    void keyPressed(QString keyInfo);
+    void mouseClicked(QString mouseInfo);
+
 
 protected:
     std::unique_ptr<QRhi> m_rhi;
@@ -27,6 +35,10 @@ protected:
     std::unique_ptr<QRhiRenderPassDescriptor> m_rp;
     bool m_hasSwapChain = false;
     QRhi::Implementation m_graphicsApi = QRhi::D3D12;
+    void keyPressEvent(QKeyEvent *event) override;
+    void mousePressEvent(QMouseEvent *event) override;
+    void mouseReleaseEvent(QMouseEvent *event) override;
+    void mouseMoveEvent(QMouseEvent *event) override;
 
 private:
     void init();

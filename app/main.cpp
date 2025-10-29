@@ -10,12 +10,75 @@
 #include <QPushButton>
 #include <QSlider>
 #include <QGroupBox>
+#include <QKeyEvent>
+#include <QMouseEvent>
+#include <QDebug>
 #include "qlogging.h"
 #include "rhi/qrhi.h"
 #include "rhiwindow.h"
+
+// 自定义容器Widget，用于转发键盘和鼠标事件到嵌入的RhiWindow
+class WindowContainerWidget : public QWidget {
+public:
+    RhiWindow *rhiWindow = nullptr;
+    
+    WindowContainerWidget(RhiWindow *window, QWidget *parent = nullptr)
+        : QWidget(parent), rhiWindow(window) {
+        setFocusPolicy(Qt::StrongFocus);
+        setMouseTracking(true);
+    }
+
+protected:
+    void keyPressEvent(QKeyEvent *event) override {
+        qInfo() << "WindowContainerWidget::keyPressEvent - forwarding to RhiWindow";
+        if (rhiWindow) {
+            QCoreApplication::sendEvent(rhiWindow, event);
+        }
+        QWidget::keyPressEvent(event);
+    }
+
+    void keyReleaseEvent(QKeyEvent *event) override {
+        if (rhiWindow) {
+            QCoreApplication::sendEvent(rhiWindow, event);
+        }
+        QWidget::keyReleaseEvent(event);
+    }
+
+    void mousePressEvent(QMouseEvent *event) override {
+        qInfo() << "WindowContainerWidget::mousePressEvent - setting focus and forwarding";
+        setFocus();  // 点击时获取焦点
+        if (rhiWindow) {
+            QCoreApplication::sendEvent(rhiWindow, event);
+        }
+        QWidget::mousePressEvent(event);
+    }
+
+    void mouseReleaseEvent(QMouseEvent *event) override {
+        if (rhiWindow) {
+            QCoreApplication::sendEvent(rhiWindow, event);
+        }
+        QWidget::mouseReleaseEvent(event);
+    }
+
+    void mouseMoveEvent(QMouseEvent *event) override {
+        if (rhiWindow) {
+            QCoreApplication::sendEvent(rhiWindow, event);
+        }
+        QWidget::mouseMoveEvent(event);
+    }
+
+    void wheelEvent(QWheelEvent *event) override {
+        if (rhiWindow) {
+            QCoreApplication::sendEvent(rhiWindow, event);
+        }
+        QWidget::wheelEvent(event);
+    }
+};
+
 struct RendererImpl : public IRenderer {
     QRhi::Implementation backend;
     App *render_app;
+    bool is_paused = false;
     void init(QRhiNativeHandles &handles_base) override {
         if (backend == QRhi::D3D12) {
             auto &handles = static_cast<QRhiD3D12NativeHandles &>(handles_base);
@@ -34,8 +97,11 @@ struct RendererImpl : public IRenderer {
         }
     }
     void update() override {
+        if (is_paused) return;
         render_app->update();
     }
+    void pause() override { is_paused = true; }
+    void resume() override { is_paused = false; }
     uint64_t get_present_texture(luisa::uint2 resolution) override {
         return render_app->create_texture(resolution.x, resolution.y);
     }
@@ -97,6 +163,14 @@ int main(int argc, char **argv) {
     topBarLayout->addWidget(statusLabel);
 
     mainLayout->addLayout(topBarLayout);
+
+    // 添加输入事件调试信息显示
+    QLabel *inputDebugLabel = new QLabel("Input Events: Click on the render window and press keys (W/A/S/D)");
+    inputDebugLabel->setStyleSheet("QLabel { background-color: #f0f0f0; padding: 5px; border: 1px solid #ccc; }");
+    inputDebugLabel->setWordWrap(true);
+    mainLayout->addWidget(inputDebugLabel);
+
+    // ============ 核心模块：创建LC-Driven Viewport ===============
     RhiWindow *renderWindow = new RhiWindow(graphicsApi);
     RendererImpl renderer_impl;
     renderer_impl.backend = graphicsApi;
@@ -109,10 +183,24 @@ int main(int argc, char **argv) {
         renderWindow->setVulkanInstance(&inst);
 #endif
 
-    QWidget *renderContainer = QWidget::createWindowContainer(renderWindow, &mainWindow);
-    renderContainer->setMinimumSize(800, 600);
-    renderContainer->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
-    mainLayout->addWidget(renderContainer);
+    // ============ 核心模块：创建LC-Driven Viewport ===============
+    // 创建自定义容器Widget来转发事件
+    WindowContainerWidget *renderContainerWrapper = new WindowContainerWidget(renderWindow, &mainWindow);
+    renderContainerWrapper->setMinimumSize(800, 600);
+    renderContainerWrapper->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+    
+    // 创建布局并将RhiWindow的容器嵌入其中
+    QVBoxLayout *containerLayout = new QVBoxLayout(renderContainerWrapper);
+    containerLayout->setContentsMargins(0, 0, 0, 0);
+    
+    QWidget *renderContainer = QWidget::createWindowContainer(renderWindow, renderContainerWrapper);
+    renderContainer->setFocusPolicy(Qt::NoFocus); // 容器本身不接收焦点
+    containerLayout->addWidget(renderContainer);
+    
+    // 设置初始焦点
+    renderContainerWrapper->setFocus();
+    // ============ 核心模块：创建LC-Driven Viewport ===============
+    mainLayout->addWidget(renderContainerWrapper);
 
     // 底部控制面板
     QGroupBox *controlGroup = new QGroupBox("Render Controls");
@@ -121,13 +209,18 @@ int main(int argc, char **argv) {
     // 左侧按钮组
     QVBoxLayout *buttonLayout = new QVBoxLayout();
     QPushButton *startButton = new QPushButton("Start Render");
-    QPushButton *stopButton = new QPushButton("Stop Render");
-    QPushButton *resetButton = new QPushButton("Reset Scene");
-
     startButton->setEnabled(false);// 示例：默认已经在渲染
+    QPushButton *pauseButton = new QPushButton("Pause Render");
+    QObject::connect(pauseButton, &QPushButton::pressed, [renderWindow]() {
+        renderWindow->renderer->pause();
+    });
+    QPushButton *resumeButton = new QPushButton("Resume Render");
+    QObject::connect(resumeButton, &QPushButton::pressed, [renderWindow]() {
+        renderWindow->renderer->resume();
+    });
     buttonLayout->addWidget(startButton);
-    buttonLayout->addWidget(stopButton);
-    buttonLayout->addWidget(resetButton);
+    buttonLayout->addWidget(pauseButton);
+    buttonLayout->addWidget(resumeButton);
     buttonLayout->addStretch();
 
     controlLayout->addLayout(buttonLayout);
@@ -184,13 +277,24 @@ int main(int argc, char **argv) {
 
     mainLayout->addLayout(bottomLayout);
 
-    // 连接信号槽（示例，不实际实现功能）
+    // 连接Slider和Label的信号槽
     QObject::connect(sampleSlider, &QSlider::valueChanged, [sampleValueLabel](int value) {
         sampleValueLabel->setText(QString::number(value));
     });
 
     QObject::connect(bounceSlider, &QSlider::valueChanged, [bounceValueLabel](int value) {
         bounceValueLabel->setText(QString::number(value));
+    });
+
+    // 连接RhiWindow的输入事件信号到UI标签
+    QObject::connect(renderWindow, &RhiWindow::keyPressed, [inputDebugLabel](const QString &keyInfo) {
+        inputDebugLabel->setText(QString("Input Events: %1").arg(keyInfo));
+        inputDebugLabel->setStyleSheet("QLabel { background-color: #d4edda; padding: 5px; border: 1px solid #28a745; color: #155724; }");
+    });
+
+    QObject::connect(renderWindow, &RhiWindow::mouseClicked, [inputDebugLabel](const QString &mouseInfo) {
+        inputDebugLabel->setText(QString("Input Events: %1").arg(mouseInfo));
+        inputDebugLabel->setStyleSheet("QLabel { background-color: #d1ecf1; padding: 5px; border: 1px solid #17a2b8; color: #0c5460; }");
     });
 
     // 显示主窗口
