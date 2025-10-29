@@ -44,7 +44,7 @@ public:
     bool UseDRED() const noexcept override {
         return gpu_dump;
     }
-    luisa::span<DXCustomCmd::EnhancedResourceUsage const> before_states(uint64_t stream_handle) override {
+    luisa::span<DXCustomCmd::EnhancedResourceUsage const> before_states(uint64_t stream_handle) noexcept override {
         return resource_before_states;
     }
 };

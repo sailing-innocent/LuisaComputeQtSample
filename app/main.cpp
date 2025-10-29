@@ -13,107 +13,118 @@
 #include "qlogging.h"
 #include "rhi/qrhi.h"
 #include "rhiwindow.h"
+struct RendererImpl : public IRenderer {
+    QRhi::Implementation backend;
+    App *render_app;
+    void init(QRhiNativeHandles &handles_base) override {
+        if (backend == QRhi::D3D12) {
+            auto &handles = static_cast<QRhiD3D12NativeHandles &>(handles_base);
+            handles.dev = render_app->device.native_handle();
+            handles.minimumFeatureLevel = 0;
+            handles.adapterLuidHigh = render_app->dx_adaptor_luid.x;
+            handles.adapterLuidLow = render_app->dx_adaptor_luid.y;
+            handles.commandQueue = render_app->stream.native_handle();
+        } else if (backend == QRhi::Vulkan) {
+            auto &handles = static_cast<QRhiVulkanNativeHandles &>(handles_base);
+            handles.physDev = (VkPhysicalDevice)render_app->vk_physical_device;
+            handles.dev = (VkDevice)render_app->device.native_handle();
+            handles.gfxQueue = (VkQueue)render_app->stream.native_handle();
+        } else {
+            LUISA_ERROR("Backend unsupported.");
+        }
+    }
+    void update() override {
+        render_app->update();
+    }
+    uint64_t get_present_texture(luisa::uint2 resolution) override {
+        return render_app->create_texture(resolution.x, resolution.y);
+    }
+};
 
-int main(int argc, char** argv)
-{
+int main(int argc, char **argv) {
     // 使用QApplication而不是QGuiApplication以支持widgets
-    if (argc < 2)
-    {
+    if (argc < 2) {
         qInfo("use 'rhi_window_sample dx/vk/metal' to select backend");
     }
-    luisa::compute::Context ctx{ argv[0] };
-    luisa::compute::Stream stream;
+    luisa::compute::Context ctx{argv[0]};
+    App render_app;
+    luisa::string backend = argv[1];
     QApplication app(argc, argv);
-    std::string backend = argv[1];
     QRhi::Implementation graphicsApi;
-    if (backend == "dx")
-    {
+    if (backend == "dx") {
         graphicsApi = QRhi::D3D12;
-    }
-    else if (backend == "vk")
-    {
+    } else if (backend == "vk") {
         graphicsApi = QRhi::Vulkan;
-    }
-    else if (backend == "metal")
-    {
+    } else if (backend == "metal") {
         graphicsApi = QRhi::Metal;
-    }
-    else
-    {
+    } else {
         qInfo("Invalid backend, choose between dx/vk");
     }
-// For Vulkan.
+
 #if QT_CONFIG(vulkan)
     QVulkanInstance inst;
-    if (graphicsApi == QRhi::Vulkan)
-    {
-        auto const& vk_backend = ctx.load_backend("vk");
-        luisa::vector<luisa::string> inst_exts;
-        auto vk_instance = vk_backend.invoke<VkInstance(bool enable_validation, const luisa::string* extra_instance_exts, size_t extra_instance_ext_count, const char* custom_vk_lib_path, const char* custom_vk_lib_name)>(
-            "init_vk_instance",
-            false,
-            inst_exts.data(),
-            inst_exts.size(),
-            nullptr, nullptr
-        );
-        inst.setVkInstance(vk_instance);
-        if (!inst.create())
-        {
-            LUISA_ERROR("Vulkan failed.");
+    if (graphicsApi == QRhi::Vulkan) {
+        inst.setVkInstance(static_cast<VkInstance>(render_app.init_vulkan(ctx)));
+        if (!inst.create()) {
+            LUISA_ERROR("Vulkan init failed.");
         }
     }
 #endif
-
+    // Init renderer
+    render_app.init(ctx, backend.c_str());
     // 创建主窗口容器
     QWidget mainWindow;
     mainWindow.setWindowTitle("LuisaCompute Qt Sample");
     mainWindow.resize(1280, 800);
 
     // 创建主布局
-    QVBoxLayout* mainLayout = new QVBoxLayout(&mainWindow);
+    QVBoxLayout *mainLayout = new QVBoxLayout(&mainWindow);
     mainLayout->setSpacing(10);
     mainLayout->setContentsMargins(10, 10, 10, 10);
 
     // 顶部信息栏
-    QHBoxLayout* topBarLayout = new QHBoxLayout();
-    QLabel* titleLabel        = new QLabel("LuisaCompute Real-time Renderer");
-    QFont titleFont           = titleLabel->font();
+    QHBoxLayout *topBarLayout = new QHBoxLayout();
+    QLabel *titleLabel = new QLabel("LuisaCompute Real-time Renderer");
+    QFont titleFont = titleLabel->font();
     titleFont.setPointSize(12);
     titleFont.setBold(true);
     titleLabel->setFont(titleFont);
     topBarLayout->addWidget(titleLabel);
     topBarLayout->addStretch();
 
-    QLabel* statusLabel = new QLabel("Status: Running");
+    QLabel *statusLabel = new QLabel("Status: Running");
     statusLabel->setStyleSheet("QLabel { color: green; }");
     topBarLayout->addWidget(statusLabel);
 
     mainLayout->addLayout(topBarLayout);
-    HelloWindow* renderWindow    = new HelloWindow(graphicsApi);
-    renderWindow->context        = &ctx;
-    renderWindow->workspace_path = luisa::to_string(luisa::filesystem::path(argv[0]).parent_path()); // set runtime workspace path
+    RhiWindow *renderWindow = new RhiWindow(graphicsApi);
+    RendererImpl renderer_impl;
+    renderer_impl.backend = graphicsApi;
+    renderer_impl.render_app = &render_app;
+    renderWindow->renderer = &renderer_impl;
+    renderWindow->workspace_path = luisa::to_string(luisa::filesystem::path(argv[0]).parent_path());// set runtime workspace path
 
 #if QT_CONFIG(vulkan)
     if (graphicsApi == QRhi::Vulkan)
         renderWindow->setVulkanInstance(&inst);
 #endif
 
-    QWidget* renderContainer = QWidget::createWindowContainer(renderWindow, &mainWindow);
+    QWidget *renderContainer = QWidget::createWindowContainer(renderWindow, &mainWindow);
     renderContainer->setMinimumSize(800, 600);
     renderContainer->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     mainLayout->addWidget(renderContainer);
 
     // 底部控制面板
-    QGroupBox* controlGroup    = new QGroupBox("Render Controls");
-    QHBoxLayout* controlLayout = new QHBoxLayout(controlGroup);
+    QGroupBox *controlGroup = new QGroupBox("Render Controls");
+    QHBoxLayout *controlLayout = new QHBoxLayout(controlGroup);
 
     // 左侧按钮组
-    QVBoxLayout* buttonLayout = new QVBoxLayout();
-    QPushButton* startButton  = new QPushButton("Start Render");
-    QPushButton* stopButton   = new QPushButton("Stop Render");
-    QPushButton* resetButton  = new QPushButton("Reset Scene");
+    QVBoxLayout *buttonLayout = new QVBoxLayout();
+    QPushButton *startButton = new QPushButton("Start Render");
+    QPushButton *stopButton = new QPushButton("Stop Render");
+    QPushButton *resetButton = new QPushButton("Reset Scene");
 
-    startButton->setEnabled(false); // 示例：默认已经在渲染
+    startButton->setEnabled(false);// 示例：默认已经在渲染
     buttonLayout->addWidget(startButton);
     buttonLayout->addWidget(stopButton);
     buttonLayout->addWidget(resetButton);
@@ -122,24 +133,24 @@ int main(int argc, char** argv)
     controlLayout->addLayout(buttonLayout);
 
     // 中间参数控制
-    QVBoxLayout* paramLayout = new QVBoxLayout();
+    QVBoxLayout *paramLayout = new QVBoxLayout();
 
-    QHBoxLayout* sampleLayout = new QHBoxLayout();
-    QLabel* sampleLabel       = new QLabel("Samples:");
-    QSlider* sampleSlider     = new QSlider(Qt::Horizontal);
+    QHBoxLayout *sampleLayout = new QHBoxLayout();
+    QLabel *sampleLabel = new QLabel("Samples:");
+    QSlider *sampleSlider = new QSlider(Qt::Horizontal);
     sampleSlider->setRange(1, 100);
     sampleSlider->setValue(50);
-    QLabel* sampleValueLabel = new QLabel("50");
+    QLabel *sampleValueLabel = new QLabel("50");
     sampleLayout->addWidget(sampleLabel);
     sampleLayout->addWidget(sampleSlider);
     sampleLayout->addWidget(sampleValueLabel);
 
-    QHBoxLayout* bounceLayout = new QHBoxLayout();
-    QLabel* bounceLabel       = new QLabel("Max Bounce:");
-    QSlider* bounceSlider     = new QSlider(Qt::Horizontal);
+    QHBoxLayout *bounceLayout = new QHBoxLayout();
+    QLabel *bounceLabel = new QLabel("Max Bounce:");
+    QSlider *bounceSlider = new QSlider(Qt::Horizontal);
     bounceSlider->setRange(1, 10);
     bounceSlider->setValue(5);
-    QLabel* bounceValueLabel = new QLabel("5");
+    QLabel *bounceValueLabel = new QLabel("5");
     bounceLayout->addWidget(bounceLabel);
     bounceLayout->addWidget(bounceSlider);
     bounceLayout->addWidget(bounceValueLabel);
@@ -150,10 +161,10 @@ int main(int argc, char** argv)
     controlLayout->addLayout(paramLayout);
 
     // 右侧统计信息
-    QVBoxLayout* statsLayout = new QVBoxLayout();
-    QLabel* fpsLabel         = new QLabel("FPS: 60");
-    QLabel* frameTimeLabel   = new QLabel("Frame Time: 16.6ms");
-    QLabel* resolutionLabel  = new QLabel("Resolution: 1280x720");
+    QVBoxLayout *statsLayout = new QVBoxLayout();
+    QLabel *fpsLabel = new QLabel("FPS: 60");
+    QLabel *frameTimeLabel = new QLabel("Frame Time: 16.6ms");
+    QLabel *resolutionLabel = new QLabel("Resolution: 1280x720");
     statsLayout->addWidget(fpsLabel);
     statsLayout->addWidget(frameTimeLabel);
     statsLayout->addWidget(resolutionLabel);
@@ -164,9 +175,9 @@ int main(int argc, char** argv)
     mainLayout->addWidget(controlGroup);
 
     // 底部状态栏
-    QHBoxLayout* bottomLayout = new QHBoxLayout();
-    QLabel* apiLabel          = new QLabel(QString("API: %1").arg(renderWindow->graphicsApiName()));
-    QLabel* deviceLabel       = new QLabel("Device: GPU 0");
+    QHBoxLayout *bottomLayout = new QHBoxLayout();
+    QLabel *apiLabel = new QLabel(QString("API: %1").arg(renderWindow->graphicsApiName()));
+    QLabel *deviceLabel = new QLabel("Device: GPU 0");
     bottomLayout->addWidget(apiLabel);
     bottomLayout->addStretch();
     bottomLayout->addWidget(deviceLabel);
@@ -187,8 +198,6 @@ int main(int argc, char** argv)
 
     int ret = app.exec();
     // Move stream here to make it destroy later than QT
-    stream = std::move(renderWindow->app.stream);
-    stream.synchronize();
     // 清理资源
     if (renderWindow->handle())
         renderWindow->releaseSwapChain();

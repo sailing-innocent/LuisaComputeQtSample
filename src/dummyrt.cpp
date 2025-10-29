@@ -1,4 +1,5 @@
 #include "dummyrt.h"
+#include "luisa/core/dynamic_module.h"
 #include "luisa/runtime/rhi/pixel.h"
 #include <luisa/backends/ext/native_resource_ext.hpp>
 #include "base/device_config.h"
@@ -7,8 +8,7 @@ using namespace luisa;
 using namespace luisa::compute;
 
 void App::init(
-    luisa::compute::Context &&ctx, const char *backend_name) {
-    context.emplace(std::move(ctx));
+    luisa::compute::Context &ctx, const char *backend_name) {
     luisa::string_view backend = backend_name;
     bool gpu_dump;
 #ifdef NDEBUG
@@ -33,7 +33,7 @@ void App::init(
     }
 #endif
     device_config_ext = device_config.extension.get();
-    device = context->create_device(backend, &device_config);
+    device = ctx.create_device(backend, &device_config);
 #ifdef LUISA_QT_SAMPLE_ENABLE_DX
     void *native_device;
     if (backend == "dx") {
@@ -69,8 +69,12 @@ void App::init(
     draw_shader = device.compile(draw_kernel);
 }
 
-int64_t App::create_texture(uint width, uint height) {
-    dummy_image = device.create_image<float>(PixelStorage::BYTE4, width, height);
+uint64_t App::create_texture(uint width, uint height) {
+    if (dummy_image && any(dummy_image.size() != uint2(width, height))) {
+        cmd_list.add_callback([dummy_image = std::move(dummy_image)] {});
+    }
+    if (!dummy_image)
+        dummy_image = device.create_image<float>(PixelStorage::BYTE4, width, height);
     resolution = {width, height};
     return (int64_t)dummy_image.native_handle();
 }
@@ -88,5 +92,13 @@ void App::update() {
     }
 }
 App::~App() {
-    LUISA_ASSERT(!stream, "Stream must moved before dtor.");
+    stream.synchronize();
+}
+void *App::init_vulkan(luisa::compute::Context &ctx) {
+    auto const &vk_backend = ctx.load_backend("vk");
+    return vk_backend.invoke<void *(bool enable_validation, const luisa::string *extra_instance_exts, size_t extra_instance_ext_count, const char *custom_vk_lib_path, const char *custom_vk_lib_name)>(
+        "init_vk_instance",
+        false,
+        nullptr, 0,
+        nullptr, nullptr);
 }

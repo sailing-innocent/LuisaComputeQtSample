@@ -23,7 +23,6 @@
 // #define DUMMY_API
 
 struct DUMMY_API App {
-    luisa::optional<luisa::compute::Context> context;
     luisa::compute::Device device;
     luisa::compute::Stream stream;
     luisa::compute::CommandList cmd_list;
@@ -41,8 +40,9 @@ struct DUMMY_API App {
     uint32_t vk_queue_family_idx{};
     luisa::uint2 dx_adaptor_luid;
 
-    void init(luisa::compute::Context &&ctx, const char *backend_name);
-    int64_t create_texture(uint width, uint height);
+    void init(luisa::compute::Context &ctx, const char *backend_name);
+    uint64_t create_texture(uint width, uint height);
     void update();
+    void* init_vulkan(luisa::compute::Context &ctx);
     ~App();
 };

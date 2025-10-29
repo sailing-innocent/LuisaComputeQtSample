@@ -44,7 +44,7 @@ luisa::unique_ptr<luisa::compute::DeviceConfigExt> make_vk_device_config(
     device_config->device = reinterpret_cast<VkDevice>(device);
     return device_config;
 }
-auto VkDeviceConfig::create_external_device() -> ExternalDevice {
+auto VkDeviceConfig::create_external_device() noexcept -> ExternalDevice {
     return ExternalDevice{
         .instance = instance,
         .physical_device = physical_device,
@@ -75,4 +75,10 @@ void set_vk_before_state(
     ptr->resource_before_states.emplace_back(
         resource,
         (VKCustomCmd::ResourceUsageType)resource_type);
+}
+void *VkDeviceConfig::device_feature_settings() noexcept {
+    multiview_features = VkPhysicalDeviceMultiviewFeatures{
+        .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTIVIEW_FEATURES,
+        .multiview = VK_TRUE};
+    return &multiview_features;
 }

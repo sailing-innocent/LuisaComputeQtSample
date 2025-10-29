@@ -20,18 +20,19 @@ struct VkDeviceConfig : public VulkanDeviceConfigExt {
     IDxcLibrary *dxc_library{};
     IDxcUtils *dxc_utils{};
     luisa::vector<VKCustomCmd::ResourceUsage> resource_before_states;
+    VkPhysicalDeviceMultiviewFeatures multiview_features;
     VkDeviceConfig();
     ~VkDeviceConfig();
-    bool load_dxc() const override {
+    bool load_dxc() const noexcept override {
         return true;// TODO: we may don't want to load DXC in random target platform
     }
-    luisa::span<VKCustomCmd::ResourceUsage const> before_states(uint64_t stream_handle) override {
+    luisa::span<VKCustomCmd::ResourceUsage const> before_states(uint64_t stream_handle) noexcept override {
         return resource_before_states;
     }
-    luisa::vector<luisa::string> extra_instance_exts() {
+    luisa::vector<luisa::string> extra_device_exts() noexcept {
         return luisa::vector<luisa::string>{"VK_KHR_multiview", "VK_KHR_maintenance2"};
     }
-    ExternalDevice create_external_device();
+    ExternalDevice create_external_device() noexcept;
     void readback_vulkan_device(
         VkInstance instance,
         VkPhysicalDevice physical_device,
@@ -47,4 +48,5 @@ struct VkDeviceConfig : public VulkanDeviceConfigExt {
         IDxcCompiler3 *dxc_compiler,
         IDxcLibrary *dxc_library,
         IDxcUtils *dxc_utils) noexcept override;
+    void *device_feature_settings() noexcept override;
 };

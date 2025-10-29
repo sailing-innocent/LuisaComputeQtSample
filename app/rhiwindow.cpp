@@ -5,6 +5,13 @@
 #include <QPainter>
 #include <QFile>
 #include <rhi/qshader.h>
+static QShader getShader(const QString &name) {
+    QFile f(name);
+    if (f.open(QIODevice::ReadOnly))
+        return QShader::fromSerialized(f.readAll());
+
+    return QShader();
+}
 
 RhiWindow::RhiWindow(QRhi::Implementation graphicsApi)
     : m_graphicsApi(graphicsApi) {
@@ -86,105 +93,7 @@ bool RhiWindow::event(QEvent *e) {
 }
 
 void RhiWindow::init() {
-    customInit(luisa::compute::Context{*context});
-    // #if QT_CONFIG(metal)
-    //     if (m_graphicsApi == QRhi::Metal) {
-    //         QRhiMetalInitParams params;
-    //         m_rhi.reset(QRhi::create(QRhi::Metal, &params));
-    //     }
-    // #endif
-}
-
-void RhiWindow::resizeSwapChain() {
-    m_hasSwapChain = m_sc->createOrResize();// also handles m_ds
-}
-void RhiWindow::releaseSwapChain() {
-    if (m_hasSwapChain) {
-        m_hasSwapChain = false;
-        m_sc->destroy();
-    }
-}
-void RhiWindow::render() {
-    if (!m_hasSwapChain || m_notExposed)
-        return;
-    if (m_sc->currentPixelSize() != m_sc->surfacePixelSize() || m_newlyExposed) {
-        resizeSwapChain();
-        if (!m_hasSwapChain)
-            return;
-        m_newlyExposed = false;
-    }
-
-    QRhi::FrameOpResult result = m_rhi->beginFrame(m_sc.get());
-
-    if (result == QRhi::FrameOpSwapChainOutOfDate) {
-        resizeSwapChain();
-        if (!m_hasSwapChain)
-            return;
-        result = m_rhi->beginFrame(m_sc.get());
-    }
-    if (result != QRhi::FrameOpSuccess) {
-        qWarning("beginFrame failed with %d, will retry", result);
-        requestUpdate();
-        return;
-    }
-
-    customRender();
-
-    m_rhi->endFrame(m_sc.get());
-    requestUpdate();
-}
-
-static QShader getShader(const QString &name) {
-    QFile f(name);
-    if (f.open(QIODevice::ReadOnly))
-        return QShader::fromSerialized(f.readAll());
-
-    return QShader();
-}
-
-HelloWindow::HelloWindow(QRhi::Implementation graphicsApi)
-    : RhiWindow(graphicsApi) {
-}
-
-void HelloWindow::ensureFullscreenTexture(const QSize &pixelSize, QRhiResourceUpdateBatch *u) {
-    if (m_texture && m_texture->pixelSize() == pixelSize)
-        return;
-
-    if (!m_texture)
-        m_texture.reset(m_rhi->newTexture(QRhiTexture::RGBA8, pixelSize));
-    else
-        m_texture->setPixelSize(pixelSize);
-
-    uint64_t handle = app.create_texture(pixelSize.width(), pixelSize.height());
-    m_texture->createFrom({handle, m_graphicsApi == QRhi::Vulkan ? 1 : 0});
-
-    // m_texture->create();
-    // uint64_t handle = m_texture->nativeTexture().object;
-    // uint width = m_texture->pixelSize().width();
-    // uint height = m_texture->pixelSize().height();
-    // app.update(handle, width, height);
-
-    // QImage image(pixelSize, QImage::Format_RGBA8888_Premultiplied);
-    // QPainter painter(&image);
-    // painter.fillRect(QRectF(QPointF(0, 0), pixelSize), QColor::fromRgbF(0.4f, 0.7f, 0.0f, 1.0f));
-    // painter.setPen(Qt::transparent);
-    // painter.setBrush({ QGradient(QGradient::DeepBlue) });
-    // painter.drawRoundedRect(QRectF(QPointF(20, 20), pixelSize - QSize(40, 40)), 16, 16);
-    // painter.setPen(Qt::black);
-    // QFont font;
-    // font.setPixelSize(0.05 * qMin(pixelSize.width(), pixelSize.height()));
-    // painter.setFont(font);
-    // painter.drawText(QRectF(QPointF(60, 60), pixelSize - QSize(120, 120)), 0,
-    //                  QLatin1String("Rendering with QRhi to a resizable QWindow.\nThe 3D API is %1.\nUse the command-line options to choose a different API.")
-    //                  .arg(graphicsApiName()));
-    // painter.end();
-
-    // if (m_rhi->isYUpInNDC())
-    //     image = image.mirrored();
-    // u->uploadTexture(m_texture.get(), image);
-}
-
-void HelloWindow::customInit(luisa::compute::Context &&ctx) {
+    LUISA_ASSERT(renderer, "Initialize callback not setted.");
     if (m_graphicsApi == QRhi::D3D12) {
         QRhiD3D12NativeHandles handles;
         QRhiD3D12InitParams params;
@@ -193,23 +102,14 @@ void HelloWindow::customInit(luisa::compute::Context &&ctx) {
 #else
         params.enableDebugLayer = false;
 #endif
-        app.init(std::move(ctx), "dx");
-        handles.dev = app.device.native_handle();
-        handles.minimumFeatureLevel = 0;
-        handles.adapterLuidHigh = app.dx_adaptor_luid.x;
-        handles.adapterLuidLow = app.dx_adaptor_luid.y;
-        handles.commandQueue = app.stream.native_handle();
+        renderer->init(handles);
         m_rhi.reset(QRhi::create(QRhi::D3D12, &params, {}, &handles));
     } else if (m_graphicsApi == QRhi::Vulkan) {
         QRhiVulkanInitParams params;
         QRhiVulkanNativeHandles handles;
         params.inst = vulkanInstance();
         params.window = this;
-
-        app.init(std::move(ctx), "vk");
-        handles.physDev = (VkPhysicalDevice)app.vk_physical_device;
-        handles.dev = (VkDevice)app.device.native_handle();
-        handles.gfxQueue = (VkQueue)app.stream.native_handle();
+        renderer->init(handles);
         handles.inst = vulkanInstance();
         m_rhi.reset(QRhi::create(QRhi::Vulkan, &params, {}, &handles));
     }
@@ -245,7 +145,39 @@ void HelloWindow::customInit(luisa::compute::Context &&ctx) {
     m_fullscreenQuadPipeline->create();
 }
 
-void HelloWindow::customRender() {
+void RhiWindow::resizeSwapChain() {
+    m_hasSwapChain = m_sc->createOrResize();// also handles m_ds
+}
+void RhiWindow::releaseSwapChain() {
+    if (m_hasSwapChain) {
+        m_hasSwapChain = false;
+        m_sc->destroy();
+    }
+}
+void RhiWindow::render() {
+    if (!m_hasSwapChain || m_notExposed)
+        return;
+    if (m_sc->currentPixelSize() != m_sc->surfacePixelSize() || m_newlyExposed) {
+        resizeSwapChain();
+        if (!m_hasSwapChain)
+            return;
+        m_newlyExposed = false;
+    }
+
+    QRhi::FrameOpResult result = m_rhi->beginFrame(m_sc.get());
+
+    if (result == QRhi::FrameOpSwapChainOutOfDate) {
+        resizeSwapChain();
+        if (!m_hasSwapChain)
+            return;
+        result = m_rhi->beginFrame(m_sc.get());
+    }
+    if (result != QRhi::FrameOpSuccess) {
+        qWarning("beginFrame failed with %d, will retry", result);
+        requestUpdate();
+        return;
+    }
+
     QRhiResourceUpdateBatch *resourceUpdates = m_rhi->nextResourceUpdateBatch();
 
     if (m_initialUpdates) {
@@ -257,8 +189,7 @@ void HelloWindow::customRender() {
     QRhiCommandBuffer *cb = m_sc->currentFrameCommandBuffer();
     const QSize outputSizeInPixels = m_sc->currentPixelSize();
     ensureFullscreenTexture(outputSizeInPixels, resourceUpdates);
-
-    app.update();
+    renderer->update();
 
     cb->beginPass(m_sc->currentFrameRenderTarget(), Qt::black, {1.0f, 0}, resourceUpdates);
     cb->setGraphicsPipeline(m_fullscreenQuadPipeline.get());
@@ -266,4 +197,20 @@ void HelloWindow::customRender() {
     cb->setShaderResources();
     cb->draw(3);
     cb->endPass();
+
+    m_rhi->endFrame(m_sc.get());
+    requestUpdate();
+}
+
+void RhiWindow::ensureFullscreenTexture(const QSize &pixelSize, QRhiResourceUpdateBatch *u) {
+    if (m_texture && m_texture->pixelSize() == pixelSize)
+        return;
+
+    if (!m_texture)
+        m_texture.reset(m_rhi->newTexture(QRhiTexture::RGBA8, pixelSize));
+    else
+        m_texture->setPixelSize(pixelSize);
+
+    uint64_t handle = renderer->get_present_texture(luisa::uint2(pixelSize.width(), pixelSize.height()));
+    m_texture->createFrom({handle, m_graphicsApi == QRhi::Vulkan ? 1 : 0});
 }
