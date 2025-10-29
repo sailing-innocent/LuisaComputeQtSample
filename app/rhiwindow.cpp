@@ -226,18 +226,35 @@ void RhiWindow::ensureFullscreenTexture(const QSize &pixelSize, QRhiResourceUpda
 
 void RhiWindow::keyPressEvent(QKeyEvent *event) {
     QString keyName;
+    // Handle Key Event
+    renderer->handle_key(key_map(event->key()));
+
+    // Debug Info handler
     switch (event->key()) {
-        case Qt::Key_W: keyName = "W"; break;
-        case Qt::Key_A: keyName = "A"; break;
-        case Qt::Key_S: keyName = "S"; break;
-        case Qt::Key_D: keyName = "D"; break;
+        case Qt::Key_W: {
+            keyName = "W";
+            break;
+        }
+        case Qt::Key_A: {
+            keyName = "A";
+            break;
+        }
+        case Qt::Key_S: {
+            keyName = "S";
+            break;
+        }
+        case Qt::Key_D: {
+            keyName = "D";
+            break;
+        }
         default: keyName = QString("Key(%1)").arg(event->key()); break;
     }
-    
+
     QString keyInfo = QString("Key Pressed: %1 (code: %2)").arg(keyName).arg(event->key());
     qInfo() << keyInfo;
     emit keyPressed(keyInfo);
-    
+
+    // Root Window Handler
     QWindow::keyPressEvent(event);
 }
 
@@ -249,14 +266,14 @@ void RhiWindow::mousePressEvent(QMouseEvent *event) {
         case Qt::MiddleButton: buttonName = "Middle"; break;
         default: buttonName = "Unknown"; break;
     }
-    
+
     QString mouseInfo = QString("Mouse Clicked: %1 button at (%2, %3)")
                             .arg(buttonName)
                             .arg(event->pos().x())
                             .arg(event->pos().y());
     qInfo() << mouseInfo;
     emit mouseClicked(mouseInfo);
-    
+
     QWindow::mousePressEvent(event);
 }
 

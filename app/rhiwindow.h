@@ -3,12 +3,25 @@
 #include <QOffscreenSurface>
 #include <rhi/qrhi.h>
 #include "dummyrt.h"
+#include <luisa/gui/input.h>
+
+inline luisa::compute::Key key_map(int key) {
+    using namespace luisa::compute;
+    switch (key) {
+        case Qt::Key_W: return KEY_W;
+        case Qt::Key_A: return KEY_A;
+        case Qt::Key_S: return KEY_S;
+        case Qt::Key_D: return KEY_D;
+        default: return KEY_UNKNOWN;
+    }
+}
 
 struct IRenderer {
     virtual void init(QRhiNativeHandles &) = 0;
     virtual void update() = 0;
     virtual void pause() = 0;
     virtual void resume() = 0;
+    virtual void handle_key(luisa::compute::Key key) = 0;
     virtual uint64_t get_present_texture(luisa::uint2 resolution) = 0;
 protected:
     ~IRenderer() = default;

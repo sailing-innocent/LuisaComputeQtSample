@@ -21,7 +21,7 @@
 class WindowContainerWidget : public QWidget {
 public:
     RhiWindow *rhiWindow = nullptr;
-    
+
     WindowContainerWidget(RhiWindow *window, QWidget *parent = nullptr)
         : QWidget(parent), rhiWindow(window) {
         setFocusPolicy(Qt::StrongFocus);
@@ -46,7 +46,7 @@ protected:
 
     void mousePressEvent(QMouseEvent *event) override {
         qInfo() << "WindowContainerWidget::mousePressEvent - setting focus and forwarding";
-        setFocus();  // 点击时获取焦点
+        setFocus();// 点击时获取焦点
         if (rhiWindow) {
             QCoreApplication::sendEvent(rhiWindow, event);
         }
@@ -102,6 +102,7 @@ struct RendererImpl : public IRenderer {
     }
     void pause() override { is_paused = true; }
     void resume() override { is_paused = false; }
+    void handle_key(luisa::compute::Key key) override { render_app->handle_key(key); }
     uint64_t get_present_texture(luisa::uint2 resolution) override {
         return render_app->create_texture(resolution.x, resolution.y);
     }
@@ -188,15 +189,15 @@ int main(int argc, char **argv) {
     WindowContainerWidget *renderContainerWrapper = new WindowContainerWidget(renderWindow, &mainWindow);
     renderContainerWrapper->setMinimumSize(800, 600);
     renderContainerWrapper->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
-    
+
     // 创建布局并将RhiWindow的容器嵌入其中
     QVBoxLayout *containerLayout = new QVBoxLayout(renderContainerWrapper);
     containerLayout->setContentsMargins(0, 0, 0, 0);
-    
+
     QWidget *renderContainer = QWidget::createWindowContainer(renderWindow, renderContainerWrapper);
-    renderContainer->setFocusPolicy(Qt::NoFocus); // 容器本身不接收焦点
+    renderContainer->setFocusPolicy(Qt::NoFocus);// 容器本身不接收焦点
     containerLayout->addWidget(renderContainer);
-    
+
     // 设置初始焦点
     renderContainerWrapper->setFocus();
     // ============ 核心模块：创建LC-Driven Viewport ===============
